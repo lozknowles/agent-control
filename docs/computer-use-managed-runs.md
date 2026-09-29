@@ -29,13 +29,15 @@ Machines advertise capability state as `SUPPORTED`, `UNSUPPORTED`, `AVAILABLE`, 
 
 Provider advertisements declare STEP/MANAGED_RUN support, capabilities, streaming observations, cancellation, human takeover, native verification, session persistence, external processing and estimated cost. Coasty-specific structures are not present in core. No Coasty credentials or approved no-cost endpoint were available during this candidate, so its status is `PROVIDER_ACCESS_UNAVAILABLE` and no adapter was fabricated.
 
+The 4.19 qualification physically exercised the same frozen text-entry intent through Playwright/Edge and Windows Sky/Notepad. Both reached independently verified terminal state through this boundary. Windows Sky additionally exercised STEP and MANAGED_RUN, but only on a disposable unsaved Notepad surface; unsupported browser semantics were reported as `UNSUPPORTED`, not provider failures.
+
 ## Authoritative event stream
 
 Computer-use events are ordered, append-only and SHA-256 hash-chained. They cover admission, capability match, worker selection, plan creation, action planning/dispatch/completion, observations, assertions, retries, human intervention, verification, cancellation and terminal Job state. Each normalized managed-run event is appended to the existing authoritative Job `run-events.jsonl` ledger with its original timestamp, actor, state, sequence and hash-chain evidence; the complete stream is also retained in the result artifact. Legacy bounded computer-use actions emit the same normalized lifecycle projection. Provider-native logs remain diagnostic inputs rather than the completion authority.
 
 ## Qualification boundary
 
-Automated tests cover STEP, MANAGED_RUN, independent actor/verifier separation, the mandatory negative verification case, human takeover, workflow validation, capability/budget/privacy routing and event-chain integrity. Earlier isolated browser and Windows-provider tests remain focused evidence. No new Coasty, multi-provider physical comparison, external benchmark score, production deployment or unrestricted desktop-autonomy claim is made.
+Automated tests cover STEP, MANAGED_RUN, independent actor/verifier separation, mandatory false-success detection, human takeover, workflow validation, capability/budget/privacy routing, verified provider history and event-chain integrity. Physical qualification covers two legitimate providers only for their shared frozen text-entry subset. It does not establish a general provider ranking, an external benchmark score, production deployment or unrestricted desktop autonomy.
 
 OSWorld integration is `DEFERRED_FOR_FULL_QUALIFICATION`. A future adapter must preserve official tasks, environment, scoring and contamination controls; Agent Control orchestration metrics must be reported separately from provider performance.
 

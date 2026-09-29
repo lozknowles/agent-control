@@ -85,7 +85,8 @@
     "check:showcase": "node --import tsx scripts/check-showcase.ts",
     "check:showcase:structure": "node --import tsx scripts/check-showcase.ts --structure",
     "check:release-rc": "node --import tsx scripts/check-release-rc.ts",
-    "check:limitations": "node scripts/check-limitations-carry-forward.mjs evidence/limitations/agent-control-limitations-v4.10.0.json evidence/limitations/agent-control-limitations.json && node --test scripts/limitations-ledger.test.mjs scripts/limitations-carry-forward.test.mjs"
+    "check:limitations": "node scripts/check-limitations-carry-forward.mjs evidence/limitations/agent-control-limitations-v4.10.0.json evidence/limitations/agent-control-limitations.json && node --test scripts/limitations-ledger.test.mjs scripts/limitations-carry-forward.test.mjs",
+    "report:computer-use-4.19": "node --import tsx scripts/build-computer-use-reports-4.19.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",

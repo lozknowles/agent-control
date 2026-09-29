@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.computer-use-limitations/v1",
-  "candidateRelease": "4.18.0",
+  "candidateRelease": "4.19.0",
   "updated": "2026-09-29",
   "records": [
     {
@@ -11,15 +11,15 @@
     },
     {
       "id": "CU-LIM-002",
-      "status": "COMPARISON_UNAVAILABLE",
+      "status": "LIMITED_COMPARABILITY",
       "scope": "Cross-provider physical comparison",
-      "limitation": "Only the existing local Playwright path was legitimately available for this candidate; a two-provider physical comparison was therefore not claimed."
+      "limitation": "Playwright/Edge and Windows Sky/Notepad both physically executed and independently verified CU-MP-001 through the common boundary, but their wider frozen workloads are unequal; provider-wide ranking is not justified."
     },
     {
       "id": "CU-LIM-003",
-      "status": "EXPERIMENTAL",
+      "status": "QUALIFIED_WITH_LIMITATIONS",
       "scope": "Windows desktop provider",
-      "limitation": "The Windows Sky bridge remains experimental and requires an explicitly configured endpoint and token file; it is not a production route."
+      "limitation": "Windows Sky physically qualified STEP and MANAGED_RUN for disposable native Notepad text entry and observation only. It is not qualified for arbitrary desktop work, file persistence, authenticated applications or production routing."
     },
     {
       "id": "CU-LIM-004",
@@ -31,7 +31,7 @@
       "id": "CU-LIM-005",
       "status": "FOCUSED_QUALIFICATION_ONLY",
       "scope": "STEP and MANAGED_RUN",
-      "limitation": "The provider-neutral controller is covered by bounded automated and local browser tests; this does not establish unrestricted desktop autonomy or production readiness."
+      "limitation": "The provider-neutral controller, false-success detection, deterministic routing, budget/privacy gates and bounded physical provider subset are qualified. This does not establish unrestricted desktop autonomy, broad provider superiority or production readiness."
     }
   ]
 }

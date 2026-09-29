@@ -20,8 +20,8 @@ export class PlaywrightComputerProvider implements ComputerProvider {
     const abort=()=>void browser.close();signal?.addEventListener('abort',abort,{once:true});
     const observe=async():Promise<ComputerObservation>=>{
       revision=randomUUID();elements=new Map();
-      const raw=await active.locator('a,button,input,textarea,select,[role]').evaluateAll(nodes=>nodes.slice(0,150).map((node,index)=>({index,role:node.getAttribute('role')??node.tagName.toLowerCase(),name:node.getAttribute('aria-label')??node.getAttribute('placeholder')??node.textContent?.trim().slice(0,120)??'',text:node.textContent?.trim().slice(0,120)??''})));
-      const rows=raw.map(item=>{const id=`e${item.index}`;elements.set(id,`a,button,input,textarea,select,[role] >> nth=${item.index}`);return {id,role:item.role,name:item.name,text:item.text};});
+      const raw=await active.locator('a,button,input,textarea,select,output,[role]').evaluateAll(nodes=>nodes.slice(0,150).map((node,index)=>({index,role:node.getAttribute('role')??node.tagName.toLowerCase(),name:node.getAttribute('aria-label')??node.getAttribute('placeholder')??node.textContent?.trim().slice(0,120)??'',text:node.textContent?.trim().slice(0,120)??''})));
+      const rows=raw.map(item=>{const id=`e${item.index}`;elements.set(id,`a,button,input,textarea,select,output,[role] >> nth=${item.index}`);return {id,role:item.role,name:item.name,text:item.text};});
       return {revision,at:new Date().toISOString(),target:{...target,tab:active.url()},url:active.url(),title:await active.title(),text:(await active.locator('body').innerText().catch(()=>'' )).slice(0,8000),elements:rows};
     };
     const act=async(action:ComputerAction)=>{

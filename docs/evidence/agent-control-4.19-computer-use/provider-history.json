@@ -1,0 +1,110 @@
+{
+  "schema": "agent-control.computer-use-provider-history/v1",
+  "generatedAt": "2026-09-29T17:30:39.467Z",
+  "sourceBenchmark": "agent-control-cu-4.19-frozen-20260929",
+  "records": [
+    {
+      "provider": "playwright-browser",
+      "taskClass": "activation",
+      "attempts": 2,
+      "providerCompletions": 2,
+      "verifiedSuccesses": 2,
+      "verificationFailures": 0,
+      "falseSuccesses": 0,
+      "retries": 0,
+      "cancellations": 0,
+      "medianElapsedMs": 8860,
+      "providerCharge": 0,
+      "evidence": [
+        "event-tip:3e6e7dba8c57b795b0ca238b225e787ab7d106b78dccac6807c3855ab315432d",
+        "event-tip:9fa622dd8aa7ab9a8484b862a0449e8ba4035d7310c90a14f9df13e569805e7e",
+        "run:cu-lvl-001-managed_run",
+        "run:cu-lvl-001-step"
+      ]
+    },
+    {
+      "provider": "playwright-browser",
+      "taskClass": "form-submission",
+      "attempts": 4,
+      "providerCompletions": 4,
+      "verifiedSuccesses": 0,
+      "verificationFailures": 4,
+      "falseSuccesses": 4,
+      "retries": 0,
+      "cancellations": 0,
+      "medianElapsedMs": 1489,
+      "providerCharge": 0,
+      "evidence": [
+        "event-tip:1a40a5c51f79ee99690eda313dfa94d5fe722491bf369c4323780e44bc26b95c",
+        "event-tip:1fe6f5872af40d202faef2b75c917b06eeba2f4d5118d18d5f00f22b12dd62c2",
+        "event-tip:6d18e7b3ebcb7b414f5f37171063c93b4161180d3e889dc01107d77f4570129f",
+        "event-tip:c1b7e2cf89bae615cf1d857c217beccb39993a542f2f3e4de3a052fe48412edc",
+        "run:cu-fs-001-not-submitted",
+        "run:cu-fs-001-partial",
+        "run:cu-fs-001-wrong-destination",
+        "run:cu-fs-001-wrong-value"
+      ]
+    },
+    {
+      "provider": "playwright-browser",
+      "taskClass": "recovery",
+      "attempts": 6,
+      "providerCompletions": 6,
+      "verifiedSuccesses": 3,
+      "verificationFailures": 3,
+      "falseSuccesses": 3,
+      "retries": 3,
+      "cancellations": 0,
+      "medianElapsedMs": 8753,
+      "providerCharge": 0,
+      "evidence": [
+        "event-tip:3d5bcde9c8ea65aefdb09b483df9e37d6affa8712647d36e0f541af4732381e0",
+        "event-tip:4604625e64957703190005c1a05456a5768399ba618be767e4725146196134d8",
+        "event-tip:64b93c89a76eb4b201ddf45a87c51319d0faf88cf93b1a2fa643e127990a1e2e",
+        "event-tip:6cc9a1e6713d87f7f0befc2bf28f2d559e82546d16916d72180b182fedf98e6a",
+        "event-tip:77b1fbfb9067d9440a0c30a3c950c177786417ce9038d0eaf378e078f1be0761",
+        "event-tip:a172a3e60b9edbcd97712238c0020e47c5346b0fed3b951a56ac920354af204d",
+        "run:cu-rr-001-governed-1",
+        "run:cu-rr-001-governed-2",
+        "run:cu-rr-001-governed-3",
+        "run:cu-rr-001-no-recovery-1",
+        "run:cu-rr-001-no-recovery-2",
+        "run:cu-rr-001-no-recovery-3"
+      ]
+    },
+    {
+      "provider": "playwright-browser",
+      "taskClass": "text-entry",
+      "attempts": 1,
+      "providerCompletions": 1,
+      "verifiedSuccesses": 1,
+      "verificationFailures": 0,
+      "falseSuccesses": 0,
+      "retries": 0,
+      "cancellations": 0,
+      "medianElapsedMs": 1507,
+      "providerCharge": 0,
+      "evidence": [
+        "event-tip:6cf4d7920f9021f0c0b23df74fa1f736a86162a3789ba044542f29b46542fd89",
+        "run:cu-mp-001-playwright"
+      ]
+    },
+    {
+      "provider": "windows-sky",
+      "taskClass": "text-entry",
+      "attempts": 1,
+      "providerCompletions": 1,
+      "verifiedSuccesses": 1,
+      "verificationFailures": 0,
+      "falseSuccesses": 0,
+      "retries": 0,
+      "cancellations": 0,
+      "medianElapsedMs": 916,
+      "providerCharge": 0,
+      "evidence": [
+        "event-tip:54521e8e2343866a5311f6d30fcc12001d482ed5daba8892a8b487e81f1ea77b",
+        "run:ac-4.19-windows-sky-step"
+      ]
+    }
+  ]
+}

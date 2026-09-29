@@ -9,8 +9,8 @@ const elements=tree=>[...String(tree??'').matchAll(/^\s*(\d+)\s+([^\r\n]+)/gm)].
 const json=(response,status,value)=>{response.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});response.end(JSON.stringify(value));};
 
 /** Ephemeral, loopback-only transport for the Windows Computer Use provider. sky is injected by the desktop runtime. */
-export async function startSkyBridge({sky,window,application,evidenceDir,token,allowedKeys=[],forbiddenTitlePattern}={}){
-  if(!sky||!window||!Number.isInteger(window.id)||!window.app||!application||!evidenceDir||!token||String(token).length<32)throw Error('sky_bridge_configuration_invalid');
+export async function startSkyBridge({sky,window,application,evidenceDir,token,allowedKeys=[],forbiddenTitlePattern,port=0}={}){
+  if(!sky||!window||!Number.isInteger(window.id)||!window.app||!application||!evidenceDir||!token||String(token).length<32||!Number.isInteger(port)||port<0||port>65535)throw Error('sky_bridge_configuration_invalid');
   fs.mkdirSync(evidenceDir,{recursive:true});
   const keySet=new Set(allowedKeys),app=window.app,id=window.id;let state=null,revision='',sessionId='',lastScreenshotRef;
   const selected=async()=>{
@@ -62,6 +62,6 @@ export async function startSkyBridge({sky,window,application,evidenceDir,token,a
       return json(response,404,{error:'not_found'});
     }catch(error){return json(response,409,{error:error instanceof Error?error.message:String(error)});}
   });
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
   return {port:server.address().port,close:()=>new Promise(resolve=>server.close(resolve))};
 }

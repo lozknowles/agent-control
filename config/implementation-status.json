@@ -1,6 +1,6 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.18.0",
+  "release": "4.19.0",
   "updated": "2026-09-29",
   "capabilities": [
     {
@@ -13,23 +13,29 @@
         "src/control/computer-use-managed.ts",
         "src/control/portable-workflow.ts",
         "src/control/computer-use-workflow.ts",
-        "src/control/computer-use-lifecycle.ts"
+        "src/control/computer-use-lifecycle.ts",
+        "src/control/computer-use-benchmark.ts"
       ],
       "tests": [
         "src/control/computer-use.test.ts",
         "src/control/computer-use-managed.test.ts",
         "src/control/portable-workflow.test.ts",
         "src/control/computer-use-workflow.test.ts",
-        "src/control/computer-use-lifecycle.test.ts"
+        "src/control/computer-use-lifecycle.test.ts",
+        "src/control/computer-use-benchmark.test.ts"
       ],
       "evidence": [
         "docs/computer-use.md",
         "docs/computer-use-lifecycle.md",
         "docs/computer-use-managed-runs.md",
-        "docs/evidence/agent-control-4.18-computer-use-qualification.md",
+        "docs/evidence/agent-control-4.19-computer-use-qualification.md",
+        "docs/evidence/agent-control-4.19-computer-use/combined-benchmark.json",
+        "AGENT_CONTROL_4.19_COMPUTER_USE_BENCHMARK.md",
+        "AGENT_CONTROL_4.19_PROVIDER_COMPARISON.md",
+        "OSWORLD_QUALIFICATION_PLAN.md",
         "config/computer-use-limitations.json"
       ],
-      "limitation": "Focused automated qualification is complete. Coasty access and a second physical computer-use provider were unavailable; OSWorld is deferred; Windows desktop evidence remains experimental and no production route is enabled."
+      "limitation": "The common boundary is physically qualified for Playwright/Edge and Windows Sky/Notepad on one shared text-entry intent. Wider workloads are unequal, Windows Sky is limited to disposable native text entry, Coasty remains unavailable, OSWorld is deferred and no production route is enabled."
     },
     {
       "id": "evidence.automatic-visual-capture",

@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.19.0 — Measurable multi-provider Computer Use
+
+Turns provider-neutral Computer Use into measurable limited multi-provider infrastructure. Playwright/Edge and Windows Sky/Notepad physically execute and independently verify the same frozen text-entry intent through the common boundary. The frozen baseline separates provider completion, verified success and false success; adds bounded adversarial, recovery, routing, budget and locality experiments; records task-specific verified provider history and per-verified-outcome economics; and publishes an evidence manifest plus an honest OSWorld qualification plan. Coasty remains unavailable, broader Windows desktop autonomy is not qualified, OSWorld remains deferred and production is unchanged. See [release notes](docs/release-notes-4.19.0.md) and [qualification](docs/evidence/agent-control-4.19-computer-use-qualification.md).
+
 ## 4.18.0 — Provider-neutral governed computer use
 
 Adds Agent Control-owned `STEP` and bounded `MANAGED_RUN` orchestration above replaceable observe/act providers. Provider completion is distinct from independent verification; human intervention, routing, budget, retries, cancellation and normalized Job events remain explicit. Learned Blender procedures compile into provider-neutral workflow primitives without provider scripts. The bounded local Playwright path is qualified on Windows and supported Linux; Coasty access was unavailable, no second physical provider was available, Windows desktop remains experimental and OSWorld is deferred. See [release notes](docs/release-notes-4.18.0.md) and [qualification](docs/evidence/agent-control-4.18-computer-use-qualification.md).

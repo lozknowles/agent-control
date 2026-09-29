@@ -6,7 +6,7 @@
 
 Agent Control can execute digest-bound [Agent Control Lab agent templates](docs/agent-templates.md) through its existing Work Parcel and Job Runtime path. Templates declare specialist instructions and requirements; runtime policy remains authoritative.
 
-**Governed Computer Use:** provider-neutral `STEP` and `MANAGED_RUN` Jobs keep execution separate from independent verification, retain normalized lifecycle evidence, and route by capability and budget. The bounded Playwright browser path is qualified; unrestricted desktop autonomy is not. See the [managed-run architecture](docs/computer-use-managed-runs.md).
+**Governed Computer Use:** provider-neutral `STEP` and `MANAGED_RUN` Jobs keep execution separate from independent verification, retain normalized lifecycle evidence, and route by capability, verified history, locality and budget. Playwright/Edge and Windows Sky/Notepad are physically qualified for one shared frozen text-entry intent; unrestricted desktop autonomy is not. See the [managed-run architecture](docs/computer-use-managed-runs.md).
 
 **Agentic Topology, Lifecycle, Assurance & Supervision**
 
@@ -20,7 +20,7 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Current release: 4.18.0.** Agent Control now owns provider-neutral single-step and bounded managed computer-use orchestration, independent result verification, auditable human intervention, capability/budget routing, portable workflow primitives, normalized append-only Job events, and dashboard evidence. Coasty access was unavailable and no adapter was fabricated; OSWorld is deferred. See the [qualification](docs/evidence/agent-control-4.18-computer-use-qualification.md), [release notes](docs/release-notes-4.18.0.md), and [limitations](docs/known-limitations-4.18.md).
+**Current release: 4.19.0.** Agent Control measures provider completion separately from independently verified success, detects false success, compares bounded recovery, routes by capability/cost/locality/verified history, and retains provider-specific evidence. Two legitimate physical providers verified the same frozen intent through the common boundary. Coasty remains unavailable and OSWorld remains deferred. See the [qualification](docs/evidence/agent-control-4.19-computer-use-qualification.md), [release notes](docs/release-notes-4.19.0.md), and [limitations](docs/known-limitations-4.19.md).
 
 **Latest published release: [4.18.0](https://github.com/lozknowles/agent-control/releases/tag/v4.18.0) — Provider-neutral governed computer use.** Production services and configuration are unchanged by this software release.
 

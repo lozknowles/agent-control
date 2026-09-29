@@ -1,0 +1,518 @@
+{
+  "schema": "agent-control.computer-use-provider-qualification/v1",
+  "qualificationId": "agent-control-4.19-windows-sky",
+  "frozenSpecification": {
+    "path": "config/computer-use-benchmark-4.19.json",
+    "sha256": "484d199332fad62812cd3e8669086ebe21ae72a4de61115459c3666b533e5528"
+  },
+  "startedAt": "2026-09-29T17:12:50.674Z",
+  "completedAt": "2026-09-29T17:12:52.948Z",
+  "provider": {
+    "id": "windows-sky",
+    "worker": "controller-local",
+    "runtime": "Codex @oai/sky Windows adapter",
+    "application": "Notepad",
+    "applicationState": "disposable unsaved tab",
+    "externalApi": false,
+    "providerCharge": 0
+  },
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "hostnameHash": "f936c64eb2f99967d11cb14160b66ebfd6ce719a7ced875dcfc425e0b7c6aa0a"
+  },
+  "results": [
+    {
+      "schema": "agent-control.computer-managed-run/v1",
+      "runId": "ac-4.19-windows-sky-step",
+      "level": "STEP",
+      "state": "VERIFIED",
+      "provider": "windows-sky",
+      "verifier": "deterministic-state-verifier",
+      "startedAt": "2026-09-29T17:12:50.675Z",
+      "endedAt": "2026-09-29T17:12:51.591Z",
+      "budget": {
+        "maximumProviderSpend": 0,
+        "estimatedProviderSpend": 0
+      },
+      "providerExecutionCompleted": true,
+      "verification": {
+        "passed": true,
+        "checks": [
+          {
+            "check": {
+              "kind": "text",
+              "value": "AC-4.19-FROZEN"
+            },
+            "passed": true
+          }
+        ],
+        "detail": "deterministic_state_matched"
+      },
+      "observation": {
+        "revision": "19555f0c-5310-41d3-8436-9e8420602461",
+        "at": "2026-09-29T17:12:51.590Z",
+        "target": {
+          "machine": "controller-local",
+          "application": "Notepad",
+          "window": "redacted-ephemeral-window"
+        },
+        "title": "Disposable untitled Notepad qualification surface",
+        "text": "AC-4.19-FROZEN",
+        "elements": [
+          {
+            "id": "redacted-document",
+            "role": "document",
+            "name": "Text editor"
+          }
+        ],
+        "screenshot": {
+          "sha256": "139ef9b8586c5f4d4b8e7a7904723f02f07f51224234959fa854bcc64cde8222",
+          "mediaType": "image/jpeg"
+        }
+      },
+      "actions": 1,
+      "retries": 0,
+      "human": [],
+      "qualification": "AUTONOMOUS",
+      "events": [
+        {
+          "sequence": 1,
+          "at": "2026-09-29T17:12:50.675Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "JOB_ACCEPTED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "STEP",
+          "previousHash": null,
+          "hash": "0f824b0758c920c5f3018dacee33aee6b2681ffa5e6fedbbb768f59a2525f8f6"
+        },
+        {
+          "sequence": 2,
+          "at": "2026-09-29T17:12:50.675Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "ADMISSION_STARTED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "policy_budget_capability_admission",
+          "previousHash": "0f824b0758c920c5f3018dacee33aee6b2681ffa5e6fedbbb768f59a2525f8f6",
+          "hash": "493a1f48ebc37c5bff37e62c378443243909916865393e5486cf371d40a73c86"
+        },
+        {
+          "sequence": 3,
+          "at": "2026-09-29T17:12:50.711Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "CAPABILITY_MATCHED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "observe,inspect,screenshot,click,doubleClick,typeText,pressKey,focusWindow,wait",
+          "previousHash": "493a1f48ebc37c5bff37e62c378443243909916865393e5486cf371d40a73c86",
+          "hash": "4feef6a1440ab0517a9ccee9c19478f590b8acc3cfbf0895e94bd0d4963b522c"
+        },
+        {
+          "sequence": 4,
+          "at": "2026-09-29T17:12:50.711Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "WORKER_SELECTED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "windows-sky",
+          "previousHash": "4feef6a1440ab0517a9ccee9c19478f590b8acc3cfbf0895e94bd0d4963b522c",
+          "hash": "b934230dcabfa833ae5c6362cb5001465331ed180d09805f5832556476e6086a"
+        },
+        {
+          "sequence": 5,
+          "at": "2026-09-29T17:12:50.711Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "PLAN_CREATED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "1 primitives",
+          "previousHash": "b934230dcabfa833ae5c6362cb5001465331ed180d09805f5832556476e6086a",
+          "hash": "be94e748c0968a6531112a48b5eea25e83facbff30e29d90f0d608ae122d87a5"
+        },
+        {
+          "sequence": 6,
+          "at": "2026-09-29T17:12:51.026Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "OBSERVATION_RECEIVED",
+          "state": "PLANNING",
+          "actor": "windows-sky",
+          "detail": "371beda0-b809-47f6-980e-2e645fb1375f",
+          "previousHash": "be94e748c0968a6531112a48b5eea25e83facbff30e29d90f0d608ae122d87a5",
+          "hash": "73f8752d48a70f72c969924e8446b1d03db6fb6f46e3ee21162e5f4d0b7ac343"
+        },
+        {
+          "sequence": 7,
+          "at": "2026-09-29T17:12:51.026Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "ACTION_PLANNED",
+          "state": "EXECUTING",
+          "actor": "agent-control",
+          "detail": "write-step-token",
+          "previousHash": "73f8752d48a70f72c969924e8446b1d03db6fb6f46e3ee21162e5f4d0b7ac343",
+          "hash": "f03bb1fd7c652053a1ae4ca780b1753f4c3bcad04fe747ee86c87a6e18a48825"
+        },
+        {
+          "sequence": 8,
+          "at": "2026-09-29T17:12:51.027Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "ACTION_DISPATCHED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "typeText",
+          "previousHash": "f03bb1fd7c652053a1ae4ca780b1753f4c3bcad04fe747ee86c87a6e18a48825",
+          "hash": "d4a3bd716749c8a3e39e11477129fcf9f3dff758ef3131ec86d85acefed9dfbb"
+        },
+        {
+          "sequence": 9,
+          "at": "2026-09-29T17:12:51.361Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "ACTION_COMPLETED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "provider_acknowledged",
+          "previousHash": "d4a3bd716749c8a3e39e11477129fcf9f3dff758ef3131ec86d85acefed9dfbb",
+          "hash": "45f08df0b8d16beb565857a82d6b8f63ea0cb199a31208df2b39355141dac224"
+        },
+        {
+          "sequence": 10,
+          "at": "2026-09-29T17:12:51.591Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "OBSERVATION_RECEIVED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "19555f0c-5310-41d3-8436-9e8420602461",
+          "previousHash": "45f08df0b8d16beb565857a82d6b8f63ea0cb199a31208df2b39355141dac224",
+          "hash": "53d0e46f63a680a7e053ba53c1c224d22aa5dd36b77f27a33c487a0e9dc5b56f"
+        },
+        {
+          "sequence": 11,
+          "at": "2026-09-29T17:12:51.591Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "VERIFICATION_STARTED",
+          "state": "VERIFYING",
+          "actor": "deterministic-state-verifier",
+          "detail": "independent_verifier_started",
+          "previousHash": "53d0e46f63a680a7e053ba53c1c224d22aa5dd36b77f27a33c487a0e9dc5b56f",
+          "hash": "582d818fe9a27819d44ea443d18b5b34003080ca228cf92b58bc5eb1433141a8"
+        },
+        {
+          "sequence": 12,
+          "at": "2026-09-29T17:12:51.591Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "VERIFICATION_PASSED",
+          "state": "VERIFIED",
+          "actor": "deterministic-state-verifier",
+          "detail": "deterministic_state_matched",
+          "previousHash": "582d818fe9a27819d44ea443d18b5b34003080ca228cf92b58bc5eb1433141a8",
+          "hash": "9bdabaecb34133e779cf72a8ff8e242e7ac3f4c4162a6c3db5f10822370121b5"
+        },
+        {
+          "sequence": 13,
+          "at": "2026-09-29T17:12:51.591Z",
+          "runId": "ac-4.19-windows-sky-step",
+          "type": "JOB_SUCCEEDED",
+          "state": "VERIFIED",
+          "actor": "agent-control",
+          "detail": "verified_goal",
+          "previousHash": "9bdabaecb34133e779cf72a8ff8e242e7ac3f4c4162a6c3db5f10822370121b5",
+          "hash": "54521e8e2343866a5311f6d30fcc12001d482ed5daba8892a8b487e81f1ea77b"
+        }
+      ]
+    },
+    {
+      "schema": "agent-control.computer-managed-run/v1",
+      "runId": "ac-4.19-windows-sky-managed",
+      "level": "MANAGED_RUN",
+      "state": "VERIFIED",
+      "provider": "windows-sky",
+      "verifier": "deterministic-state-verifier",
+      "startedAt": "2026-09-29T17:12:51.601Z",
+      "endedAt": "2026-09-29T17:12:52.934Z",
+      "budget": {
+        "maximumProviderSpend": 0,
+        "estimatedProviderSpend": 0
+      },
+      "providerExecutionCompleted": true,
+      "verification": {
+        "passed": true,
+        "checks": [
+          {
+            "check": {
+              "kind": "text",
+              "value": "AC-4.19-FROZEN"
+            },
+            "passed": true
+          },
+          {
+            "check": {
+              "kind": "text",
+              "value": "AC-4.19-MANAGED"
+            },
+            "passed": true
+          }
+        ],
+        "detail": "deterministic_state_matched"
+      },
+      "observation": {
+        "revision": "ab998f62-66a9-4599-aea6-a374f4f09e35",
+        "at": "2026-09-29T17:12:52.932Z",
+        "target": {
+          "machine": "controller-local",
+          "application": "Notepad",
+          "window": "redacted-ephemeral-window"
+        },
+        "title": "Disposable untitled Notepad qualification surface",
+        "text": "AC-4.19-FROZEN\nAC-4.19-MANAGED",
+        "elements": [
+          {
+            "id": "redacted-document",
+            "role": "document",
+            "name": "Text editor"
+          }
+        ],
+        "screenshot": {
+          "sha256": "4b5de76da2466bf03c24e094d5a37994a4fdf5b940b388de0c76f07fce972dd7",
+          "mediaType": "image/jpeg"
+        }
+      },
+      "actions": 2,
+      "retries": 0,
+      "human": [],
+      "qualification": "AUTONOMOUS",
+      "events": [
+        {
+          "sequence": 1,
+          "at": "2026-09-29T17:12:51.601Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "JOB_ACCEPTED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "MANAGED_RUN",
+          "previousHash": null,
+          "hash": "63102f1ed1f1fffbe99633b0828c853670e0a17f289afee662f68be8524ab70d"
+        },
+        {
+          "sequence": 2,
+          "at": "2026-09-29T17:12:51.601Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "ADMISSION_STARTED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "policy_budget_capability_admission",
+          "previousHash": "63102f1ed1f1fffbe99633b0828c853670e0a17f289afee662f68be8524ab70d",
+          "hash": "f74237ad46438397746ea97abb27c9776cb53098ef8218a1e25de5af296f4e0d"
+        },
+        {
+          "sequence": 3,
+          "at": "2026-09-29T17:12:51.603Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "CAPABILITY_MATCHED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "observe,inspect,screenshot,click,doubleClick,typeText,pressKey,focusWindow,wait",
+          "previousHash": "f74237ad46438397746ea97abb27c9776cb53098ef8218a1e25de5af296f4e0d",
+          "hash": "6eaed079026661f21355c7a755b451106c721064798d943846d1e29f24d8f21c"
+        },
+        {
+          "sequence": 4,
+          "at": "2026-09-29T17:12:51.603Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "WORKER_SELECTED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "windows-sky",
+          "previousHash": "6eaed079026661f21355c7a755b451106c721064798d943846d1e29f24d8f21c",
+          "hash": "b54fb3dce07b8383de97edba3ab3ddbf5e9b4fb4cb1e117e31e9209dce5ffc6e"
+        },
+        {
+          "sequence": 5,
+          "at": "2026-09-29T17:12:51.603Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "PLAN_CREATED",
+          "state": "PLANNING",
+          "actor": "agent-control",
+          "detail": "2 primitives",
+          "previousHash": "b54fb3dce07b8383de97edba3ab3ddbf5e9b4fb4cb1e117e31e9209dce5ffc6e",
+          "hash": "53719ecb234436bf94c45b64d30a0858828d63f76239b8cdb81d2edb04b8ac99"
+        },
+        {
+          "sequence": 6,
+          "at": "2026-09-29T17:12:51.886Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "OBSERVATION_RECEIVED",
+          "state": "PLANNING",
+          "actor": "windows-sky",
+          "detail": "4db6f968-0290-4856-9f98-e3e67ca231fe",
+          "previousHash": "53719ecb234436bf94c45b64d30a0858828d63f76239b8cdb81d2edb04b8ac99",
+          "hash": "bc15d208c3264be7495cdc5646a611ad24cde70766a354c60da94350cf99af61"
+        },
+        {
+          "sequence": 7,
+          "at": "2026-09-29T17:12:51.886Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "ACTION_PLANNED",
+          "state": "EXECUTING",
+          "actor": "agent-control",
+          "detail": "new-line",
+          "previousHash": "bc15d208c3264be7495cdc5646a611ad24cde70766a354c60da94350cf99af61",
+          "hash": "2b66cc333b5b86786a138a7da97b3524422af57505d5d4d4d5be07ffb7301272"
+        },
+        {
+          "sequence": 8,
+          "at": "2026-09-29T17:12:51.887Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "ACTION_DISPATCHED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "pressKey",
+          "previousHash": "2b66cc333b5b86786a138a7da97b3524422af57505d5d4d4d5be07ffb7301272",
+          "hash": "f58c07f755605aa331506ee8d8dd7c378b27b6a152f4a3416bc4ca3327fbb56a"
+        },
+        {
+          "sequence": 9,
+          "at": "2026-09-29T17:12:52.195Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "ACTION_COMPLETED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "provider_acknowledged",
+          "previousHash": "f58c07f755605aa331506ee8d8dd7c378b27b6a152f4a3416bc4ca3327fbb56a",
+          "hash": "c6213b9cc1080c5759cc190263d8a4a1271343773e1794f14bc295fac87c268b"
+        },
+        {
+          "sequence": 10,
+          "at": "2026-09-29T17:12:52.402Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "OBSERVATION_RECEIVED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "cd9dc761-cdf9-4829-8ee0-0806bd430b76",
+          "previousHash": "c6213b9cc1080c5759cc190263d8a4a1271343773e1794f14bc295fac87c268b",
+          "hash": "6780beae31df3c6be9df3637d1ae1a3160de3c1b68680696b1cb7583565017aa"
+        },
+        {
+          "sequence": 11,
+          "at": "2026-09-29T17:12:52.402Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "ACTION_PLANNED",
+          "state": "EXECUTING",
+          "actor": "agent-control",
+          "detail": "write-managed-token",
+          "previousHash": "6780beae31df3c6be9df3637d1ae1a3160de3c1b68680696b1cb7583565017aa",
+          "hash": "ef43d73f5900404f0bcc7a2d4182b2ee0dd65dd27f20762d473f43c52297740a"
+        },
+        {
+          "sequence": 12,
+          "at": "2026-09-29T17:12:52.403Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "ACTION_DISPATCHED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "typeText",
+          "previousHash": "ef43d73f5900404f0bcc7a2d4182b2ee0dd65dd27f20762d473f43c52297740a",
+          "hash": "48da1553205bd9ccb0eb8081ba98949d89793a297a64cddeb5a75b90c21e0eb2"
+        },
+        {
+          "sequence": 13,
+          "at": "2026-09-29T17:12:52.723Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "ACTION_COMPLETED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "provider_acknowledged",
+          "previousHash": "48da1553205bd9ccb0eb8081ba98949d89793a297a64cddeb5a75b90c21e0eb2",
+          "hash": "a34bdb7c011c881d6474e35dc84dfdd0c243624a0a0a94e729e286cb534484ac"
+        },
+        {
+          "sequence": 14,
+          "at": "2026-09-29T17:12:52.933Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "OBSERVATION_RECEIVED",
+          "state": "EXECUTING",
+          "actor": "windows-sky",
+          "detail": "ab998f62-66a9-4599-aea6-a374f4f09e35",
+          "previousHash": "a34bdb7c011c881d6474e35dc84dfdd0c243624a0a0a94e729e286cb534484ac",
+          "hash": "e17747a4e9ebf232a9862d7e6b00eb2f4424111c317c4da3defaddd160390b97"
+        },
+        {
+          "sequence": 15,
+          "at": "2026-09-29T17:12:52.933Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "VERIFICATION_STARTED",
+          "state": "VERIFYING",
+          "actor": "deterministic-state-verifier",
+          "detail": "independent_verifier_started",
+          "previousHash": "e17747a4e9ebf232a9862d7e6b00eb2f4424111c317c4da3defaddd160390b97",
+          "hash": "2322c6e7c89f36b122d9fcc1d64ad552e8cc66e06c400e06534f98626f7ac1e3"
+        },
+        {
+          "sequence": 16,
+          "at": "2026-09-29T17:12:52.933Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "VERIFICATION_PASSED",
+          "state": "VERIFIED",
+          "actor": "deterministic-state-verifier",
+          "detail": "deterministic_state_matched",
+          "previousHash": "2322c6e7c89f36b122d9fcc1d64ad552e8cc66e06c400e06534f98626f7ac1e3",
+          "hash": "43894be8000f17ea23420317e6c5178381c639ab85513d72185bf87a57a8558d"
+        },
+        {
+          "sequence": 17,
+          "at": "2026-09-29T17:12:52.934Z",
+          "runId": "ac-4.19-windows-sky-managed",
+          "type": "JOB_SUCCEEDED",
+          "state": "VERIFIED",
+          "actor": "agent-control",
+          "detail": "verified_goal",
+          "previousHash": "43894be8000f17ea23420317e6c5178381c639ab85513d72185bf87a57a8558d",
+          "hash": "f8fc51459683c5e71bae650c218aef8e3de2a810dc3ff8eee2a1b2bd8fe22ba2"
+        }
+      ]
+    }
+  ],
+  "benchmarkAttempt": {
+    "id": "cu-mp-001-windows-sky",
+    "taskId": "CU-MP-001",
+    "taskClass": "text-entry",
+    "provider": "windows-sky",
+    "worker": "controller-local",
+    "runtime": "Codex @oai/sky Windows adapter",
+    "level": "STEP",
+    "providerReportedStatus": "COMPLETED",
+    "verification": "PASSED",
+    "terminal": "VERIFIED",
+    "actions": 1,
+    "retries": 0,
+    "elapsedMs": 916,
+    "providerCharge": 0,
+    "localComputeCost": null,
+    "energyWh": null,
+    "hardwareTimeMs": 916,
+    "humanIntervention": false,
+    "humanDurationMs": null,
+    "cancellation": false,
+    "evidence": [
+      "run:ac-4.19-windows-sky-step",
+      "event-tip:54521e8e2343866a5311f6d30fcc12001d482ed5daba8892a8b487e81f1ea77b"
+    ],
+    "failureClass": null,
+    "adversarialFalseSuccess": false
+  },
+  "summary": {
+    "attempts": 2,
+    "providerCompletions": 2,
+    "verifiedSuccesses": 2,
+    "falseSuccesses": 0,
+    "humanInterventions": 0,
+    "providerCharge": 0
+  },
+  "limitations": [
+    "Qualification covers native Windows text entry and observation only.",
+    "No file was saved and no production service was changed.",
+    "Open-tab names and unrelated document content were excluded from the public evidence.",
+    "Visual-model verification was not used."
+  ]
+}
