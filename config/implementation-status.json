@@ -1,12 +1,12 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.17.0",
+  "release": "4.18.0",
   "updated": "2026-09-29",
   "capabilities": [
     {
       "id": "computer-use.provider-neutral-managed-runs",
       "title": "Provider-neutral computer-use STEP and MANAGED_RUN orchestration",
-      "status": "IMPLEMENTED",
+      "status": "QUALIFIED",
       "summary": "Agent Control owns single-step and bounded managed computer-use runs, independent verification, portable workflow primitives, auditable human intervention, capability-based machine routing, budgets and a hash-chained semantic event stream while providers remain observation/action executors.",
       "sources": [
         "src/control/computer-use.ts",
@@ -26,6 +26,7 @@
         "docs/computer-use.md",
         "docs/computer-use-lifecycle.md",
         "docs/computer-use-managed-runs.md",
+        "docs/evidence/agent-control-4.18-computer-use-qualification.md",
         "config/computer-use-limitations.json"
       ],
       "limitation": "Focused automated qualification is complete. Coasty access and a second physical computer-use provider were unavailable; OSWorld is deferred; Windows desktop evidence remains experimental and no production route is enabled."

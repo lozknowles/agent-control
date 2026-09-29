@@ -6,7 +6,7 @@
 
 Agent Control can execute digest-bound [Agent Control Lab agent templates](docs/agent-templates.md) through its existing Work Parcel and Job Runtime path. Templates declare specialist instructions and requirements; runtime policy remains authoritative.
 
-**Experimental Computer Use:** a provider-neutral Job capability can observe and verify bounded graphical tasks. The first adapter qualifies a disposable headless Chromium page; desktop providers, Blender and session video remain unqualified. See the [Computer Use architecture and limitations](docs/computer-use.md).
+**Governed Computer Use:** provider-neutral `STEP` and `MANAGED_RUN` Jobs keep execution separate from independent verification, retain normalized lifecycle evidence, and route by capability and budget. The bounded Playwright browser path is qualified; unrestricted desktop autonomy is not. See the [managed-run architecture](docs/computer-use-managed-runs.md).
 
 **Agentic Topology, Lifecycle, Assurance & Supervision**
 
@@ -20,11 +20,9 @@ ATLAS is Agent Control's public identity: **Agentic Topology, Lifecycle, Assuran
 
 Discover your AI tools, see what is available, and follow approved work from request to verified result.
 
-**Prepared candidate: 4.13.0 — governed Estate, Factory observation and historical diagnostics.** See [candidate notes](docs/release-notes-4.13.0.md), [installation/upgrade/rollback](docs/upgrade-4.13.md) and [qualification boundaries](docs/release-verification-4.13.0.md). Publication is pending approval.
+**Current release: 4.18.0.** Agent Control now owns provider-neutral single-step and bounded managed computer-use orchestration, independent result verification, auditable human intervention, capability/budget routing, portable workflow primitives, normalized append-only Job events, and dashboard evidence. Coasty access was unavailable and no adapter was fabricated; OSWorld is deferred. See the [qualification](docs/evidence/agent-control-4.18-computer-use-qualification.md), [release notes](docs/release-notes-4.18.0.md), and [limitations](docs/known-limitations-4.18.md).
 
-**Current release: 4.17.0.** Provider-neutral image negotiation and benchmarking, a bounded independently replayed Blender procedure, and governed automatic visual evidence are included. On Windows, the normal web startup registers an FFmpeg desktop-capture adapter; REQUIRED evidence is admitted and started before operational Job dispatch, while unavailable required capture fails with zero operational calls. See the [release qualification](docs/evidence/agent-control-4.17-qualification.md), [release notes](docs/release-notes-4.17.0.md), [automatic-evidence boundary](docs/automatic-evidence-mode.md) and [limitations](docs/known-limitations-4.17.md).
-
-**Latest published release: [4.12.1](https://github.com/lozknowles/agent-control/releases/tag/v4.12.1) — Dashboard Navigation and Recovery Visibility.** This patch adds authoritative workspace search, durable favourites, governed WATCH entry, containment/recovery history, evidence-backed project and repository navigation, and protected artifact viewing. It preserves the 4.12 native runtime and governed cost-routing model. See the [workspace guide](docs/navigable-workspaces.md), [release notes](docs/release-notes-4.12.1.md), [upgrade guide](docs/upgrade-4.12.1.md), and [release verification](docs/release-verification-4.12.1.md).
+**Latest published release: [4.18.0](https://github.com/lozknowles/agent-control/releases/tag/v4.18.0) — Provider-neutral governed computer use.** Production services and configuration are unchanged by this software release.
 
 The release also incorporates the qualified 4.9 reliability safeguards: governed raw inference, explicit local/API usage accounting, live-writer-safe activity-log repair, protected workspace metadata and cancellation fencing before abort. The optional phone-hosted planning route remains experimental and has no physical end-to-end qualification.
 
@@ -32,7 +30,7 @@ The release also incorporates the qualified 4.9 reliability safeguards: governed
 
 **4.8 nested execution:** [Follow work through nested environments](docs/nested-execution-environments.md) from a physical device through host/guest environments, runtime and worker route to the exact invocation and evidence. Nested capacity is scoped and is never added to physical Estate capacity.
 
-[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Upgrade](docs/upgrade-4.12.1.md) · [Release notes](docs/release-notes-4.12.1.md)
+[Install Agent Control](docs/installation-first-run.md) · [Documentation](docs/index.md) · [Release notes](docs/release-notes-4.18.0.md)
 
 [![Actual Agent Control Estate Map](docs/media/4.6/integration/estate.png)](docs/public-installation-journey.md)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.18.0 — Provider-neutral governed computer use
+
+Adds Agent Control-owned `STEP` and bounded `MANAGED_RUN` orchestration above replaceable observe/act providers. Provider completion is distinct from independent verification; human intervention, routing, budget, retries, cancellation and normalized Job events remain explicit. Learned Blender procedures compile into provider-neutral workflow primitives without provider scripts. The bounded local Playwright path is qualified on Windows and supported Linux; Coasty access was unavailable, no second physical provider was available, Windows desktop remains experimental and OSWorld is deferred. See [release notes](docs/release-notes-4.18.0.md) and [qualification](docs/evidence/agent-control-4.18-computer-use-qualification.md).
+
 ## 4.13.0 — Governed Estate and Historical Diagnostics (candidate)
 
 Adds scoped identity-pinned discovery, native Factory/Precision views, permission-governed historical diagnostics and shared recording. Fixes source-budget starvation and context-free log classification. Historical failures are kept separate from current incident status; partial collection is explicit. See [release notes](docs/release-notes-4.13.0.md) and the external exact-candidate receipt. Publication remains pending approval.
