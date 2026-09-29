@@ -6,21 +6,21 @@
   "taskClass": "long-agentic-code-repair",
   "objective": "Produce one restricted Python solve(values) function from requirements distributed across a long two-stage evidence stream, then pass the frozen independent validator.",
   "worker": {
-    "id": "hpubuntu-p5000",
+    "id": "physical-p5000-worker",
     "gpuName": "Quadro P5000",
-    "gpuUuid": "GPU-04b685a8-514d-b8f1-7dd4-32f0abc1142f",
+    "gpuUuid": "env:AGENT_CONTROL_CONTEXT_GPU_UUID",
     "locality": "LOCAL"
   },
   "model": {
     "id": "Qwen3-0.6B-Q8_0",
-    "artifact": "/fast/qualification/pixel-local-models-20260915/downloaded-models/Qwen3-0.6B-Q8_0.gguf",
+    "artifact": "env:AGENT_CONTROL_CONTEXT_MODEL_ARTIFACT",
     "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
     "bytes": 639446688,
     "declaredMaximumContextTokens": 40960
   },
   "runtime": {
     "id": "llama.cpp-server",
-    "binary": "/fast/repos/llama.cpp/build-cuda/bin/llama-server",
+    "binary": "env:AGENT_CONTROL_CONTEXT_RUNTIME_BINARY",
     "sha256": "3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e",
     "version": "9371 (22d9bc441)",
     "isolatedLoopback": true,
@@ -30,7 +30,7 @@
   "safety": {
     "minimumFreeVramBytesBeforeLaunch": 3221225472,
     "minimumRetainedVramReserveBytes": 1073741824,
-    "protectedService": "http://127.0.0.1:18180/health",
+    "protectedService": "env:AGENT_CONTROL_CONTEXT_PROTECTED_HEALTH_URL",
     "maximumTrialMs": 300000,
     "maximumOutputTokens": 512,
     "providerChargeCeiling": 0
@@ -65,7 +65,8 @@
     {"contextTokens": 65536, "expected": "UNSUPPORTED_MODEL_CONTEXT_LIMIT", "execute": false}
   ],
   "integrity": {
-    "phase": "HELD_OUT_QUALIFICATION",
+    "phase": "REPRODUCIBILITY_TEMPLATE",
+    "executedConfigSha256": "f7c631888411c970567f7b4f6ace3e4879bab99e5e4b4a2c8dd22234930c3ab3",
     "baselineEvidenceSha256": "624e1a30a49e94fa22fe262a566494e8500b4016589660f4c662fcf24a6aa88b",
     "finalTuningEvidenceSha256": "38767a1918ca87304e1fc2f98a83ebba030185353ab70b3786ecfb0658d4f1b8",
     "tuningSummary": "The retained tuning sequence established an 8K-feasible first turn, prevented model summaries from replacing original evidence, and allowed one independently triggered repair. Seed 421 is frozen for held-out qualification.",

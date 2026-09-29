@@ -7,12 +7,15 @@ This report covers one held-out local-model task on one Quadro P5000 worker. It 
 ## Frozen identity
 
 - Benchmark: `AC-CTX-420-P5000-001`
-- Configuration SHA-256: `f7c631888411c970567f7b4f6ace3e4879bab99e5e4b4a2c8dd22234930c3ab3`
+- Executed private configuration SHA-256: `f7c631888411c970567f7b4f6ace3e4879bab99e5e4b4a2c8dd22234930c3ab3`
+- Public neutral template SHA-256: `d91b65721fef4d09dca885861c22501135c4b07a381ab5f35cdd40bdf2f09784`
 - Corpus SHA-256: `57cee8c83e5ec56b5abff1d1f89530862fc660e252d383b1cca17f078b206c05`
 - Raw private evidence SHA-256: `6822a2c29d32934459dd0c36a3f5c3487bec97447cfe204e2a5719cbd45d3100`
 - Model: Qwen3-0.6B-Q8_0, artifact SHA-256 `9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031`
 - Runtime: llama.cpp server 9371 (22d9bc441), binary SHA-256 `3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e`
 - Independent validator: `restricted-python-functions/v1` in a networkless sandbox
+
+The exact executed configuration is retained privately because it contains machine topology. The tracked configuration is a neutral environment-bound reproduction template and does not alter the frozen executed hash.
 
 ## Held-out trials
 

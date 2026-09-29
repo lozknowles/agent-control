@@ -5,7 +5,9 @@
   "startedAt": "2026-09-29T18:45:38.496Z",
   "completedAt": "2026-09-29T18:47:31.030Z",
   "integrity": {
-    "configSha256": "f7c631888411c970567f7b4f6ace3e4879bab99e5e4b4a2c8dd22234930c3ab3",
+    "executedConfigSha256": "f7c631888411c970567f7b4f6ace3e4879bab99e5e4b4a2c8dd22234930c3ab3",
+    "reproducibilityTemplateSha256": "d91b65721fef4d09dca885861c22501135c4b07a381ab5f35cdd40bdf2f09784",
+    "executedConfigRetainedPrivately": true,
     "corpusSha256": "57cee8c83e5ec56b5abff1d1f89530862fc660e252d383b1cca17f078b206c05",
     "rawEvidenceSha256": "6822a2c29d32934459dd0c36a3f5c3487bec97447cfe204e2a5719cbd45d3100",
     "modelSha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
@@ -50,7 +52,7 @@
     ]
   },
   "configuration": {
-    "worker": "hpubuntu-p5000",
+    "worker": "physical-p5000-worker",
     "accelerator": "Quadro P5000 16 GiB",
     "model": "Qwen3-0.6B-Q8_0",
     "modelBytes": 639446688,

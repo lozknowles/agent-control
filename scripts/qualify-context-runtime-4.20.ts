@@ -36,7 +36,9 @@ const outputPath=path.resolve(process.argv[3]??'docs/evidence/agent-control-4.20
 const logRoot=path.join(path.dirname(outputPath),'runtime-logs');
 mkdirSync(logRoot,{recursive:true});
 if(process.platform!=='linux')throw Error('context_runtime_physical_qualification_requires_linux');
-const config=JSON.parse(readFileSync(configPath,'utf8')) as Config;
+const rawConfig=JSON.parse(readFileSync(configPath,'utf8')) as Config;
+const fromEnvironment=(value:string,field:string)=>{if(!value.startsWith('env:'))return value;const name=value.slice(4),resolved=process.env[name];if(!resolved)throw Error(`context_runtime_environment_missing:${field}:${name}`);return resolved;};
+const config:Config={...rawConfig,worker:{...rawConfig.worker,gpuUuid:fromEnvironment(rawConfig.worker.gpuUuid,'worker.gpuUuid')},model:{...rawConfig.model,artifact:fromEnvironment(rawConfig.model.artifact,'model.artifact')},runtime:{...rawConfig.runtime,binary:fromEnvironment(rawConfig.runtime.binary,'runtime.binary')},safety:{...rawConfig.safety,protectedService:fromEnvironment(rawConfig.safety.protectedService,'safety.protectedService')}};
 if(config.schema!=='agent-control.context-runtime-benchmark/v1'||!config.runtime.isolatedLoopback)throw Error('context_runtime_benchmark_config_invalid');
 
 const stable=(value:unknown):string=>Array.isArray(value)?`[${value.map(stable).join(',')}]`:value&&typeof value==='object'?`{${Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([key,item])=>`${JSON.stringify(key)}:${stable(item)}`).join(',')}}`:JSON.stringify(value);
