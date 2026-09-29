@@ -1,0 +1,31 @@
+apiVersion: agent-control/v1
+kind: Job
+metadata:
+  id: governed-computer-managed-run
+  name: Governed Computer Use Managed Run
+  version: 1.0.0
+  description: Execute a bounded STEP or MANAGED_RUN and require independent Agent Control verification.
+spec:
+  enabled: true
+  priority: normal
+  concurrency: queue
+  parameters:
+    managedJson:
+      type: string
+      required: true
+  retry:
+    attempts: 0
+    backoffSeconds: 0
+  steps:
+    - id: managed-computer-use
+      action: computer.managed@1.0.0
+      requires: [browser.headless]
+      resources: [computer/session]
+      timeoutSeconds: 300
+      outputs:
+        - name: computer-managed-run
+          type: application/json
+          schema: agent-control.computer-managed-run/v1
+          version: 1.0.0
+          retention: run-history
+      verification: [computer-managed-goal-verified]

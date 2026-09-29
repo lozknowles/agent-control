@@ -4,6 +4,33 @@
   "updated": "2026-09-29",
   "capabilities": [
     {
+      "id": "computer-use.provider-neutral-managed-runs",
+      "title": "Provider-neutral computer-use STEP and MANAGED_RUN orchestration",
+      "status": "IMPLEMENTED",
+      "summary": "Agent Control owns single-step and bounded managed computer-use runs, independent verification, portable workflow primitives, auditable human intervention, capability-based machine routing, budgets and a hash-chained semantic event stream while providers remain observation/action executors.",
+      "sources": [
+        "src/control/computer-use.ts",
+        "src/control/computer-use-managed.ts",
+        "src/control/portable-workflow.ts",
+        "src/control/computer-use-workflow.ts",
+        "src/control/computer-use-lifecycle.ts"
+      ],
+      "tests": [
+        "src/control/computer-use.test.ts",
+        "src/control/computer-use-managed.test.ts",
+        "src/control/portable-workflow.test.ts",
+        "src/control/computer-use-workflow.test.ts",
+        "src/control/computer-use-lifecycle.test.ts"
+      ],
+      "evidence": [
+        "docs/computer-use.md",
+        "docs/computer-use-lifecycle.md",
+        "docs/computer-use-managed-runs.md",
+        "config/computer-use-limitations.json"
+      ],
+      "limitation": "Focused automated qualification is complete. Coasty access and a second physical computer-use provider were unavailable; OSWorld is deferred; Windows desktop evidence remains experimental and no production route is enabled."
+    },
+    {
       "id": "evidence.automatic-visual-capture",
       "title": "Governed automatic visual evidence",
       "status": "QUALIFIED",

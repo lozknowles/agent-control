@@ -1,5 +1,7 @@
 # Governed Computer Use (experimental)
 
+The provider-neutral STEP/MANAGED_RUN orchestration, workflow vocabulary, human-intervention audit model, machine routing and semantic event stream are specified in `docs/computer-use-managed-runs.md`. The session contract below remains the low-level observation/action boundary.
+
 Computer Use is a Job action for bounded graphical tasks when an API, connector or application-specific automation is unavailable. Agent Control owns the Job, worker placement, runtime safety decision, evidence artifact and completion decision. Providers own only observation and interaction. Provider output is never policy authority.
 
 ## Contract

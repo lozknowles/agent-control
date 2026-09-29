@@ -1,0 +1,37 @@
+{
+  "schema": "agent-control.computer-use-limitations/v1",
+  "candidateRelease": "4.18.0",
+  "updated": "2026-09-29",
+  "records": [
+    {
+      "id": "CU-LIM-001",
+      "status": "PROVIDER_ACCESS_UNAVAILABLE",
+      "scope": "Coasty adapter",
+      "limitation": "No legitimate Coasty endpoint, credentials or approved spend authority was available, so no adapter or provider-performance claim was created."
+    },
+    {
+      "id": "CU-LIM-002",
+      "status": "COMPARISON_UNAVAILABLE",
+      "scope": "Cross-provider physical comparison",
+      "limitation": "Only the existing local Playwright path was legitimately available for this candidate; a two-provider physical comparison was therefore not claimed."
+    },
+    {
+      "id": "CU-LIM-003",
+      "status": "EXPERIMENTAL",
+      "scope": "Windows desktop provider",
+      "limitation": "The Windows Sky bridge remains experimental and requires an explicitly configured endpoint and token file; it is not a production route."
+    },
+    {
+      "id": "CU-LIM-004",
+      "status": "DEFERRED_FOR_FULL_QUALIFICATION",
+      "scope": "OSWorld",
+      "limitation": "No OSWorld environment, official task suite, scoring run or contamination-controlled benchmark was executed in this candidate."
+    },
+    {
+      "id": "CU-LIM-005",
+      "status": "FOCUSED_QUALIFICATION_ONLY",
+      "scope": "STEP and MANAGED_RUN",
+      "limitation": "The provider-neutral controller is covered by bounded automated and local browser tests; this does not establish unrestricted desktop autonomy or production readiness."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {blenderProcedureToPortableWorkflow,validatePortableWorkflow} from './portable-workflow.js';
+import type {BlenderProcedure} from './blender-procedure.js';
+
+const procedure:BlenderProcedure={schema:'agent-control.blender-procedure/v1',id:'create-cube',version:'1.0.0',sourceJobs:['job-1','job-2'],prerequisites:['Blender 4.x','empty governed scene'],parameters:['size'],steps:[{id:'create',capability:'blender.mesh.create',parameters:{size:'${size}'},checkpoint:['cube_geometry_present'],recovery:{onFailure:'RETRY_ONCE',validation:['scene_is_writable']}}],completionCriteria:['cube_geometry_present'],cancellation:'STOP_AND_VERIFY_NO_OWNED_PROCESS',limitations:['Qualified only for a bounded cube procedure.'],sha256:'procedure-sha'};
+
+test('learned Blender procedure compiles to provider-neutral workflow primitives',()=>{const workflow=blenderProcedureToPortableWorkflow(procedure);assert.equal(workflow.schema,'agent-control.portable-workflow/v1');assert.equal(workflow.source.sha256,'procedure-sha');assert.deepEqual(workflow.source.jobs,['job-1','job-2']);const task=workflow.steps[0];assert.equal(task?.kind,'TASK');if(task?.kind!=='TASK')throw Error('task_expected');const retry=task.steps[0];assert.equal(retry?.kind,'RETRY');if(retry?.kind!=='RETRY')throw Error('retry_expected');assert.deepEqual(retry.steps[0],{id:'create:action',kind:'ACTION',capability:'blender.mesh.create',parameters:{size:'${size}'}});assert.equal(JSON.stringify(workflow).includes('blender.python.execute'),false);assert.match(workflow.limitations.at(-1)??'',/provider-specific execution/);});
+
+test('portable workflow validation bounds retries and requires semantic capabilities',()=>{const workflow=blenderProcedureToPortableWorkflow(procedure);assert.deepEqual(validatePortableWorkflow(workflow),{steps:6,actions:1});const task=workflow.steps[0];if(task?.kind!=='TASK'||task.steps[0]?.kind!=='RETRY')throw Error('retry_expected');task.steps[0].maximumAttempts=4;assert.throws(()=>validatePortableWorkflow(workflow),/retry_invalid/);});
