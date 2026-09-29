@@ -81,6 +81,7 @@
     "qualify:session-vault": "node --import tsx scripts/qualify-session-vault-4.5.ts",
     "qualify:runtime-map": "node --import tsx scripts/qualify-runtime-map-4.5.ts",
     "qualify:environment-discovery": "node --import tsx scripts/qualify-environment-discovery-4.5.ts",
+    "qualify:automatic-evidence": "node --import tsx scripts/qualify-automatic-evidence-4.17.ts",
     "check:showcase": "node --import tsx scripts/check-showcase.ts",
     "check:showcase:structure": "node --import tsx scripts/check-showcase.ts --structure",
     "check:release-rc": "node --import tsx scripts/check-release-rc.ts",

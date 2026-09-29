@@ -148,7 +148,13 @@ export class RunLedger {
 
 export interface JobRuntimeOptions {contracts?: ContractExecutionRuntime; now?: () => Date; approval?: (policy: string, run: RunRecord) => boolean; efficiency?: HarnessEfficiencyLedgerPort; safety?: RuntimeSafetySupervisorPort; defaultRecoveryDeadlineSeconds?: number; ownedExecutionFactory?: (scope: ExecutionSessionScope) => OwnedExecution; executionSessions?: ExecutionSessionRuntime;}
 export interface JobDispatch {runId: string; completion: Promise<RunRecord | undefined>;}
+export type JobDispatchOutcome='SUCCEEDED'|'FAILED'|'CANCELLED'|'TIMED_OUT';
+export interface JobDispatchGuardSession{finish(outcome:JobDispatchOutcome):Promise<void>;}
+export interface JobDispatchGuard{prepare(input:{run:RunRecord;step:RunRecord['steps'][number];worker:WorkerRegistration}):Promise<JobDispatchGuardSession|undefined>;}
 export class JobRuntime {
+  private readonly dispatchGuards:JobDispatchGuard[]=[];
+  private readonly activeDispatchGuards=new Map<string,JobDispatchGuardSession[]>();
+  registerDispatchGuard(guard:JobDispatchGuard){this.dispatchGuards.push(guard);return this;}
   readonly targetResets=new Map<string,TargetReset>();
   registerTargetReset(target:string,recovery:TargetReset){if(this.targetResets.has(target))throw Error('target_recovery_already_registered');this.targetResets.set(target,recovery);}
   async resetTarget(target:string,authority:ResetAuthority){
@@ -403,6 +409,15 @@ export class JobRuntime {
       this.ledger.update(run, decision.outcome === 'ALLOW_WITH_AUDIT' ? 'step.safety_allowed_with_audit' : 'step.safety_allowed', {decisionId: decision.id, outcome: decision.outcome, policyId: decision.policyId});
       this.setExternalOperationState(step, 'AUTHORISED', decision.reason);
     } else this.setExternalOperationState(step, 'AUTHORISED', 'No runtime safety supervisor configured');
+    try{
+      if(!this.activeDispatchGuards.has(run.id)){
+        const sessions:JobDispatchGuardSession[]=[];
+        for(const guard of this.dispatchGuards){const session=await guard.prepare({run:structuredClone(run),step:structuredClone(step),worker:structuredClone(worker)});if(session)sessions.push(session);}
+        this.activeDispatchGuards.set(run.id,sessions);
+      }
+    }catch(error){
+      const at=this.clock().toISOString(),reason=safeFailureMessage(error instanceof Error?error.message:String(error));step.status='FAILED';step.error=`dispatch_admission_failed:${reason}`;step.endedAt=at;run.status='FAILED';run.endedAt=at;run.errors.push(`${step.id}:policy:${step.error}`);this.cancelDependents(run,step.id);this.locks.release(run.id,step.id);this.ledger.update(run,'step.dispatch_admission_failed',{reason,operationalDispatch:false});return;
+    }
     const controller = new AbortController(), ownedScope = new AbortController(), ownedRequests = new Set<Promise<unknown>>(), sessionScope: ExecutionSessionScope = {runId: run.id, jobId: run.jobId, jobVersion: run.jobVersion, stepId: step.id, actionId: step.action, workerId: worker.id, nodeId: run.trigger.modelRoute?.nodeId ?? worker.id, ...(run.trigger.parcelContext?.parcelId ? {parcelId: run.trigger.parcelContext.parcelId} : {}), crewRole: crewRole(step.action), ...(run.trigger.modelRoute?.providerId ? {providerId: run.trigger.modelRoute.providerId} : {}), ...(run.trigger.modelRoute?.accountLabel ? {accountLabel: run.trigger.modelRoute.accountLabel} : {}), ...(run.trigger.modelRoute?.modelId ? {modelId: run.trigger.modelRoute.modelId} : {}),interactionPolicy:registeredAction.governance?'WATCH_ONLY':'GOVERNED_INTERVENTION'}, rawOwnedExecution = this.ownedExecutionFactory(sessionScope), ownedExecution: OwnedExecution = {runProcess: (request, signal) => { execution.assertActive(); ownedScope.signal.throwIfAborted(); const pending = rawOwnedExecution.runProcess(request, AbortSignal.any([controller.signal, ownedScope.signal, ...(signal ? [signal] : [])])); ownedRequests.add(pending); void pending.then(() => ownedRequests.delete(pending), () => ownedRequests.delete(pending)); return pending; }, terminateAll: reason => rawOwnedExecution.terminateAll(reason), activePids: () => rawOwnedExecution.activePids(), sessionIds: () => rawOwnedExecution.sessionIds?.() ?? []}, retry = definition.retry ?? run.effectiveJob.spec.retry ?? {attempts: 0, backoffSeconds: 0}, attemptStartedAt = this.clock().toISOString();
     this.controllers.set(run.id, controller); this.workers.claim(worker.id); step.status = 'RUNNING'; step.waitingReason = undefined; step.nextAttemptAt = undefined; step.startedAt ??= attemptStartedAt; run.startedAt ??= step.startedAt; run.status = 'RUNNING';
     if (!run.selectedWorkers.includes(worker.id)) run.selectedWorkers.push(worker.id);
@@ -542,7 +557,9 @@ export class JobRuntime {
       const requiredVerification = step.verification?.required ?? [], passed = new Set(output.verification ?? []); step.verification!.passed = requiredVerification.filter(item => passed.has(item)); step.verification!.failed = requiredVerification.filter(item => !passed.has(item));
       if (step.verification!.failed.length) throw new ActionFailure(`verification_failed:${step.verification!.failed.join(',')}`, 'verification');
       if (attempt.efficiencyInvocationIds.length && requiredVerification.length) this.efficiency?.markVerification(attempt.efficiencyInvocationIds, 'PASS');
-      step.status = 'SUCCEEDED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = output.detail ?? 'completed_and_verified'; run.provenance.push(...(output.evidence ?? []).map(detail => ({type: 'evidence', at: now(), detail}))); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.succeeded'); this.finalizeRun(run);
+      step.status = 'SUCCEEDED'; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = output.detail ?? 'completed_and_verified'; run.provenance.push(...(output.evidence ?? []).map(detail => ({type: 'evidence', at: now(), detail}))); this.locks.release(run.id, step.id); this.ledger.update(run, 'step.succeeded');
+      if(run.steps.every(candidate=>TERMINAL_STEPS.includes(candidate.status)))await this.finishDispatchGuards(run.id,'SUCCEEDED');
+      this.finalizeRun(run);
     } catch (error) {
       this.captureExecutionSessions(run, step, attempt, ownedExecution); const errorInvocationIds = efficiencyInvocationIds(error); if (!attempt.efficiencyInvocationIds?.length && errorInvocationIds.length) attempt.efficiencyInvocationIds = errorInvocationIds;
       const partialOutput = partialActionOutput(error); if (partialOutput) this.recordActionOutput(run, step.id, worker.id, partialOutput);
@@ -555,6 +572,7 @@ export class JobRuntime {
         if (cleanup.outcome !== 'confirmed') {
           safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, `step_timeout:${error.timeoutSeconds}s`); return;
         }
+        await this.finishDispatchGuards(run.id,'TIMED_OUT').catch(e=>run.errors.push(`automatic_evidence:${safeFailureMessage(String(e))}`));
         const endedAt = this.clock().toISOString(), terminalReason = 'step_timeout';
         step.status = 'TIMED_OUT'; step.endedAt = endedAt; step.error = `${terminalReason}:${error.timeoutSeconds}s`; attempt.endedAt = endedAt; attempt.outcome = step.error; attempt.retryable = false; attempt.errorClass = 'execution'; attempt.timeoutSeconds = error.timeoutSeconds; attempt.elapsedMs = error.elapsedMs; attempt.terminalReason = terminalReason;
         this.cancelDependents(run, step.id); run.status = 'FAILED'; run.endedAt = endedAt; run.errors.push(`${step.id}:execution:${step.error}`);
@@ -566,6 +584,7 @@ export class JobRuntime {
         const cleanup = await cleanupExecution('execution_cancelled'); attempt.cleanup = cleanup; step.cleanup = cleanup;
         this.setExternalOperationState(step, 'COMMIT_STATE_UNCERTAIN', 'Execution cancelled before external commit could be reconciled', ['EXECUTING']);
         if (cleanup.outcome !== 'confirmed') { safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, 'execution_cancelled'); return; }
+        await this.finishDispatchGuards(run.id,'CANCELLED').catch(e=>run.errors.push(`automatic_evidence:${safeFailureMessage(String(e))}`));
         step.status = 'CANCELLED'; step.waitingReason = undefined; step.endedAt = this.clock().toISOString(); attempt.endedAt = step.endedAt; attempt.outcome = 'execution_cancelled'; run.status = 'CANCELLED'; run.endedAt = step.endedAt; if (!run.errors.includes('execution_cancelled')) run.errors.push('execution_cancelled'); this.finalizeCancelledEfficiency(run, 'execution_cancelled'); this.locks.release(run.id, step.id); this.ledger.update(run, 'run.cancellation_confirmed', {cleanup: cleanup.outcome}); return;
       }
       if (!attempt.cleanup) { const cleanup = await cleanupExecution('action_failed'); attempt.cleanup = cleanup; step.cleanup = cleanup; if (cleanup.outcome !== 'confirmed') { safeToReleaseWorker = false; this.markCleanupUncertain(run, step, attempt, cleanup, 'action_failed'); return; } }
@@ -582,6 +601,7 @@ export class JobRuntime {
           run.status = ['transient-transport', 'expired-enrolment'].includes(failure.recoveryKind) ? 'RECONNECTING' : 'QUEUED';
           this.ledger.update(run, run.status === 'RECONNECTING' ? 'step.reconnect_pending' : 'step.retry_pending', {recoveryKind: failure.recoveryKind, nextAttemptAt: retryAt, recoveryDeadlineAt: step.recoveryDeadlineAt, remainingRetryBudget: step.remainingRetryBudget});
         } else {
+          await this.finishDispatchGuards(run.id,'FAILED').catch(e=>run.errors.push(`automatic_evidence:${safeFailureMessage(String(e))}`));
           step.status = 'FAILED'; step.endedAt = this.clock().toISOString(); step.remainingRetryBudget = Math.max(0, retry.attempts - step.attempts.length + 1); this.cancelDependents(run, step.id); run.errors.push(`${step.id}:${failure.failureClass}:${safeFailureMessage(failure.message)}${failure.retryable && !retryAt ? ':recovery_deadline_exhausted' : ''}`); run.status = failure.failureClass === 'verification' ? 'DEGRADED' : 'FAILED'; run.endedAt = step.endedAt; const ids = this.invocationIds(run); if (ids.length) { this.efficiency?.finalizePending(ids, 'FAILED', failure.message, 'executor_failure', run.endedAt); this.efficiency?.markVerification(ids, 'FAIL', run.status); } this.ledger.update(run, 'step.failed', {recoveryKind: failure.recoveryKind, recoveryDeadlineAt: step.recoveryDeadlineAt, remainingRetryBudget: step.remainingRetryBudget});
         }
       }
@@ -622,6 +642,7 @@ export class JobRuntime {
     const deadline = Date.parse(step.recoveryDeadlineAt ?? '');
     return Number.isFinite(deadline) && candidate.getTime() > deadline ? undefined : candidate.toISOString();
   }
+  private async finishDispatchGuards(runId:string,outcome:JobDispatchOutcome){const sessions=this.activeDispatchGuards.get(runId);if(!sessions)return;this.activeDispatchGuards.delete(runId);for(const session of sessions)await session.finish(outcome);}
   private setExternalOperationState(step: RunRecord['steps'][number], state: ExternalOperationState, reason?: string, from?: ExternalOperationState[]) { for (const operation of step.externalOperations ?? []) if ((!from || from.includes(operation.state)) && operation.state !== state) { const at = this.clock().toISOString(), safeReason = reason ? safeFailureMessage(reason) : undefined; operation.state = state; operation.updatedAt = at; operation.transitions.push({state, at, ...(safeReason ? {reason: safeReason} : {})}); if (safeReason) operation.reason = safeReason; } }
   private applyExternalOperationStates(step: RunRecord['steps'][number], states?: ActionOutput['externalOperationStates']) { for (const state of states ?? []) { const operation = step.externalOperations?.find(item => item.effectId === state.effectId); if (!operation) throw new ActionFailure(`external_operation_effect_unknown:${state.effectId}`, 'verification'); if (operation.state === state.state) continue; const at = this.clock().toISOString(), reason = state.reason ? safeFailureMessage(state.reason) : undefined; operation.state = state.state; operation.updatedAt = at; operation.transitions.push({state: state.state, at, ...(reason ? {reason} : {})}); if (reason) operation.reason = reason; } }
   private markCleanupUncertain(run: RunRecord, step: RunRecord['steps'][number], attempt: StepAttempt, cleanup: ExecutionCleanupReport, reason: string) {

@@ -25,6 +25,7 @@ import {ProviderRegistry, providersFromConfig} from './control/providers.js';
 import {PtyRegistry} from './control/pty.js';
 import {startWebDashboard} from './control/web-server.js';
 import {AutomaticEvidenceRuntime,bindAutomaticEvidenceToJobs,defaultEvidencePolicy} from './control/automatic-evidence.js';
+import {FfmpegWindowsEvidenceProvider} from './control/ffmpeg-evidence-provider.js';
 import {ContextStore} from './control/context.js';
 import {WorkQueueStore} from './control/work-queue-store.js';
 import {workQueueMetrics} from './control/work-observability.js';
@@ -250,7 +251,7 @@ startManagedNodeMonitoring(jobRuntime, snapshot => service.events.emit('resource
 startJobScheduler(jobRuntime, (id, status) => id.startsWith('parcel-') ? service.events.emit('work.parcel_changed', {parcelId: id, status}, undefined, 'job-scheduler') : service.events.emit('job.run_changed', {runId: id, status}, undefined, 'job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'job-scheduler', error: error.message}, undefined, 'job-scheduler'));
 startParameterizedJobScheduler(parameterizedJobs, (runId, status) => service.events.emit('job.run_changed', {runId, status, kind: 'parameterized'}, undefined, 'parameterized-job-scheduler'), 1000, error => service.events.emit('failure', {scope: 'parameterized-job-scheduler', error: error.message}, undefined, 'parameterized-job-scheduler'));
 const host = process.env.AGENT_CONTROL_WEB_HOST ?? '127.0.0.1', port = Number(process.env.AGENT_CONTROL_WEB_PORT ?? 4310);
-const automaticEvidence=new AutomaticEvidenceRuntime({...defaultEvidencePolicy(),mode:process.env.AGENT_CONTROL_AUTOMATIC_EVIDENCE==='on'?'ON':'OFF'});
+const automaticEvidence=new AutomaticEvidenceRuntime({...defaultEvidencePolicy(),mode:process.env.AGENT_CONTROL_AUTOMATIC_EVIDENCE==='on'?'ON':'OFF'}).register(new FfmpegWindowsEvidenceProvider());
 bindAutomaticEvidenceToJobs(jobRuntime,automaticEvidence);
 let openwa: OpenWAAdapter | undefined;
 let socialVoice: import('./control/social-voice.js').SocialVoiceCoordinator | undefined;
