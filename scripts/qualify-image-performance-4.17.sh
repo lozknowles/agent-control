@@ -2,8 +2,8 @@
 set -euo pipefail
 
 mode="${1:-}"
-if [[ "$mode" != "cold" && "$mode" != "warm" ]]; then
-  echo "usage: $0 cold|warm" >&2
+if [[ "$mode" != "cold" && "$mode" != "warm" && "$mode" != "warm-inference" ]]; then
+  echo "usage: $0 cold|warm|warm-inference" >&2
   exit 2
 fi
 
@@ -12,6 +12,8 @@ commit="$(git rev-parse HEAD)"
 output="/fast/work/agent-control-4.17-qualification-output/image-${mode}"
 state="/fast/work/agent-control-4.17-qualification-state/image-${mode}"
 workflow="/fast/work/qwen-image21-p5000-20260925/workflow-768-api.json"
+seed=20260929
+if [[ "$mode" == "warm-inference" ]]; then seed=20260930; fi
 mkdir -p "$output" "$state"
 
 queue="$(curl -fsS http://127.0.0.1:18188/queue)"
@@ -56,7 +58,7 @@ AGENT_CONTROL_SOURCE_COMMIT="$commit" node --import tsx scripts/qualify-image-4.
   --output-node 461 \
   --width 768 \
   --height 768 \
-  --seed 20260929 \
+  --seed "$seed" \
   --instruction 'A deterministic qualification still life: a cobalt blue ceramic cube on a pale oak table beside a brass ruler, soft window light, realistic product photograph, no text, no watermark.' \
   --qualification-id "4.17-${mode}" | tee "$output/qualification.stdout.json"
 
