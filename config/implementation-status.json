@@ -1,8 +1,68 @@
 {
   "schema": "agent-control.implementation-status/v1",
-  "release": "4.12.0",
-  "updated": "2026-09-20",
+  "release": "4.17.0-candidate",
+  "updated": "2026-09-29",
   "capabilities": [
+    {
+      "id": "evidence.automatic-visual-capture",
+      "title": "Governed automatic visual evidence",
+      "status": "PARTIAL",
+      "summary": "A provider-neutral runtime, dashboard policy control and Job binder derive overlays from authoritative lifecycle state, refuse evidence overwrite and retain captured or unavailable/failed manifests as Job artifacts.",
+      "sources": [
+        "src/control/automatic-evidence.ts",
+        "src/control/web-server.ts",
+        "src/web.ts",
+        "assets/dashboard/dashboard.js"
+      ],
+      "tests": [
+        "src/control/automatic-evidence.test.ts",
+        "src/control/web-server.test.ts"
+      ],
+      "evidence": [
+        "docs/automatic-evidence-mode.md",
+        "docs/evidence/agent-control-4.17-candidate-qualification.md"
+      ],
+      "limitation": "No physical capture provider is registered. Required-capture policy is observed after Job dispatch and cannot yet stop the operational action at admission, so the capability is not physically qualified or release-ready."
+    },
+    {
+      "id": "images.provider-neutral-capability-negotiation",
+      "title": "Provider-neutral image capability negotiation and benchmarking",
+      "status": "PARTIAL",
+      "summary": "Image requests negotiate operations, input constraints, dimensions, formats, seed, masks, control input, transparency, batching, progress, cost and cancellation before provider execution. Frozen benchmark observations preserve exact identities, timings, metrics and hashes without generating subjective quality scores.",
+      "sources": [
+        "src/control/image-capability.ts",
+        "src/control/image-job-actions.ts",
+        "src/control/image-benchmark.ts"
+      ],
+      "tests": [
+        "src/control/image-capability.test.ts",
+        "src/control/image-benchmark.test.ts",
+        "src/control/job-capability-actions.test.ts"
+      ],
+      "evidence": [
+        "docs/image-and-blender-capabilities.md",
+        "docs/evidence/agent-control-4.17-candidate-qualification.md"
+      ],
+      "limitation": "Qwen is physically qualified only for IMG01 generation. IMG02-IMG08 remain unsupported, and no second legitimately available provider was found for a physical cross-provider comparison."
+    },
+    {
+      "id": "blender.semantic-learned-procedure",
+      "title": "Bounded semantic Blender procedure learning and replay",
+      "status": "QUALIFIED",
+      "summary": "Repeated supervised traces can yield a semantic procedure containing reusable prerequisites, parameterised actions, checkpoints, recovery, cancellation and completion criteria. Independent replay requires a fresh Job, zero human intervention, zero supervisor operational actions and objective artifact validation.",
+      "sources": [
+        "src/control/blender-procedure.ts",
+        "scripts/qualify-blender-skill-4.17.ts"
+      ],
+      "tests": [
+        "src/control/blender-procedure.test.ts"
+      ],
+      "evidence": [
+        "docs/image-and-blender-capabilities.md",
+        "docs/evidence/agent-control-4.17-candidate-qualification.md"
+      ],
+      "limitation": "Physical evidence qualifies one bounded industrial-mezzanine procedure on Blender 4.5.14. It does not establish general Blender autonomy, and learned-procedure cancellation was not separately repeated physically."
+    },
     {
       "id": "lab.raw-direct-inference",
       "title": "Governed raw direct inference",

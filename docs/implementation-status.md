@@ -1,11 +1,14 @@
 # Implementation status
 
-Release boundary: **4.12.0**. Registry updated: **2026-09-20**.
+Release boundary: **4.17.0-candidate**. Registry updated: **2026-09-29**.
 
 This document is generated from `config/implementation-status.json`. Update the registry and run `npm run status:implementation -- --write`; do not edit this projection directly. `IMPLEMENTED` means executable source and focused tests exist. `QUALIFIED` additionally requires recorded real evidence. `PARTIAL`, `PLANNED` and `NOT_IMPLEMENTED` remain explicit gaps.
 
 | Capability | Status | Executable truth | Remaining boundary |
 | --- | --- | --- | --- |
+| Governed automatic visual evidence (`evidence.automatic-visual-capture`) | **PARTIAL** | A provider-neutral runtime, dashboard policy control and Job binder derive overlays from authoritative lifecycle state, refuse evidence overwrite and retain captured or unavailable/failed manifests as Job artifacts. | No physical capture provider is registered. Required-capture policy is observed after Job dispatch and cannot yet stop the operational action at admission, so the capability is not physically qualified or release-ready. |
+| Provider-neutral image capability negotiation and benchmarking (`images.provider-neutral-capability-negotiation`) | **PARTIAL** | Image requests negotiate operations, input constraints, dimensions, formats, seed, masks, control input, transparency, batching, progress, cost and cancellation before provider execution. Frozen benchmark observations preserve exact identities, timings, metrics and hashes without generating subjective quality scores. | Qwen is physically qualified only for IMG01 generation. IMG02-IMG08 remain unsupported, and no second legitimately available provider was found for a physical cross-provider comparison. |
+| Bounded semantic Blender procedure learning and replay (`blender.semantic-learned-procedure`) | **QUALIFIED** | Repeated supervised traces can yield a semantic procedure containing reusable prerequisites, parameterised actions, checkpoints, recovery, cancellation and completion criteria. Independent replay requires a fresh Job, zero human intervention, zero supervisor operational actions and objective artifact validation. | Physical evidence qualifies one bounded industrial-mezzanine procedure on Blender 4.5.14. It does not establish general Blender autonomy, and learned-procedure cancellation was not separately repeated physically. |
 | Governed raw direct inference (`lab.raw-direct-inference`) | **IMPLEMENTED** | An authenticated tool-free Lab route resolves an exactly qualified model or role through existing provider/runtime adapters, records RAW_INFERENCE separately from AGENT_WORKFLOW, preserves provider-reported token/cache/reasoning data and retains redacted content-addressed request/response evidence. | One physical local llama.cpp route is qualified. No API route was configured in the isolated candidate; raw inference does not prove agent or tool competence, and no universal monetary budget service is claimed. |
 | Live-writer-safe activity-log repair (`logging.live-writer-safe-repair`) | **IMPLEMENTED** | The operational activity projection can remove malformed, duplicate and non-monotonic rows while retaining an immutable backup, crash journal, canonical inode and verified post-repair digest. | This repair applies to the conventional activity projection. Authoritative Job and evidence ledgers retain their own integrity mechanisms and are not rewritten by it. |
 | Protected writable-workspace governance metadata (`sandbox.protected-workspace-metadata`) | **IMPLEMENTED** | A platform-neutral policy separates ordinary writable content from unavailable governance directories and read-only instruction, policy, parcel, baton and evidence-integrity records; the mutation adapter enforces it before task scope and excludes protected metadata from search and evidence capture. | Linux disposable mutation workspaces are tested. Windows and Android writable-workspace adapters must independently prove enforcement or report degraded/blocked support. |
@@ -77,6 +80,24 @@ This document is generated from `config/implementation-status.json`. Update the 
 | Governed cost and performance routing policy (`routing.cost-performance-policy`) | **IMPLEMENTED** | Provider-neutral Economy, Balanced, Fast Capped and Custom policies enforce rate, invocation, job and token ceilings before billable dispatch; preserve fresh, cached, reasoning and output usage separately; and fail closed when required price evidence is unavailable. The authenticated dashboard supports explain, preview and exact-hash approval with retained operator reason. | The OpenRouter translation is contract- and fixture-qualified. No paid live OpenRouter request, account change or spend is claimed, and absent provider cost remains unavailable. |
 
 ## Evidence map
+
+### Governed automatic visual evidence
+
+- Source: [`src/control/automatic-evidence.ts`](../src/control/automatic-evidence.ts), [`src/control/web-server.ts`](../src/control/web-server.ts), [`src/web.ts`](../src/web.ts), [`assets/dashboard/dashboard.js`](../assets/dashboard/dashboard.js)
+- Tests: [`src/control/automatic-evidence.test.ts`](../src/control/automatic-evidence.test.ts), [`src/control/web-server.test.ts`](../src/control/web-server.test.ts)
+- Qualification evidence: [`docs/automatic-evidence-mode.md`](../docs/automatic-evidence-mode.md), [`docs/evidence/agent-control-4.17-candidate-qualification.md`](../docs/evidence/agent-control-4.17-candidate-qualification.md)
+
+### Provider-neutral image capability negotiation and benchmarking
+
+- Source: [`src/control/image-capability.ts`](../src/control/image-capability.ts), [`src/control/image-job-actions.ts`](../src/control/image-job-actions.ts), [`src/control/image-benchmark.ts`](../src/control/image-benchmark.ts)
+- Tests: [`src/control/image-capability.test.ts`](../src/control/image-capability.test.ts), [`src/control/image-benchmark.test.ts`](../src/control/image-benchmark.test.ts), [`src/control/job-capability-actions.test.ts`](../src/control/job-capability-actions.test.ts)
+- Qualification evidence: [`docs/image-and-blender-capabilities.md`](../docs/image-and-blender-capabilities.md), [`docs/evidence/agent-control-4.17-candidate-qualification.md`](../docs/evidence/agent-control-4.17-candidate-qualification.md)
+
+### Bounded semantic Blender procedure learning and replay
+
+- Source: [`src/control/blender-procedure.ts`](../src/control/blender-procedure.ts), [`scripts/qualify-blender-skill-4.17.ts`](../scripts/qualify-blender-skill-4.17.ts)
+- Tests: [`src/control/blender-procedure.test.ts`](../src/control/blender-procedure.test.ts)
+- Qualification evidence: [`docs/image-and-blender-capabilities.md`](../docs/image-and-blender-capabilities.md), [`docs/evidence/agent-control-4.17-candidate-qualification.md`](../docs/evidence/agent-control-4.17-candidate-qualification.md)
 
 ### Governed raw direct inference
 
