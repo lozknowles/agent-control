@@ -1,8 +1,8 @@
 {
   "schema": "agent-control.context-runtime-benchmark/v1",
   "id": "AC-CTX-420-P5000-001",
-  "version": "1.0.0",
-  "seed": 420,
+  "version": "1.2.0",
+  "seed": 421,
   "taskClass": "long-agentic-code-repair",
   "objective": "Produce one restricted Python solve(values) function from requirements distributed across a long two-stage evidence stream, then pass the frozen independent validator.",
   "worker": {
@@ -36,7 +36,7 @@
     "providerChargeCeiling": 0
   },
   "task": {
-    "stageOneTransientLines": 360,
+    "stageOneTransientLines": 200,
     "stageTwoTransientLines": 220,
     "requirements": [
       "R1: Define exactly one function named solve with one parameter named values.",
@@ -65,6 +65,10 @@
     {"contextTokens": 65536, "expected": "UNSUPPORTED_MODEL_CONTEXT_LIMIT", "execute": false}
   ],
   "integrity": {
+    "phase": "HELD_OUT_QUALIFICATION",
+    "baselineEvidenceSha256": "624e1a30a49e94fa22fe262a566494e8500b4016589660f4c662fcf24a6aa88b",
+    "finalTuningEvidenceSha256": "38767a1918ca87304e1fc2f98a83ebba030185353ab70b3786ecfb0658d4f1b8",
+    "tuningSummary": "The retained tuning sequence established an 8K-feasible first turn, prevented model summaries from replacing original evidence, and allowed one independently triggered repair. Seed 421 is frozen for held-out qualification.",
     "promptTuningAfterResults": false,
     "retainAllAttempts": true,
     "independentVerificationRequired": true,

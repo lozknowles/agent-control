@@ -41,6 +41,7 @@ import {ContractExecutionRuntime} from './control/contract-runtime.js';
 import {GovernedHandoffRuntime} from './control/handoff-runtime.js';
 import {ProviderModelLifecycleRegistry} from './control/provider-lifecycle.js';
 import {RuntimeObservability} from './control/runtime-observability.js';
+import {ContextRuntimeManager} from './control/context-runtime-management.js';
 import {TokenAwareBatonRuntime} from './control/token-aware-baton-routing.js';
 import {CapabilityIntelligenceStore, registerAgentControlCoreCapabilities} from './control/capability-intelligence.js';
 import {loadFrozenQualificationSuite, ModelEvaluationCoordinator, ModelIntelligenceLedger} from './control/model-intelligence.js';
@@ -100,7 +101,8 @@ const tokenBatonRouting = new TokenAwareBatonRuntime(path.join(stateRoot, 'token
 const codexNodeExecution = new ResourceCodexNodeExecutionPort(config.resources, process.env, undefined, undefined, executionSessions);
 const providerLifecycle = new ProviderModelLifecycleRegistry(path.join(stateRoot, 'models', 'lifecycle.json'));
 const remoteTokenEnvironment = process.env.AGENT_CONTROL_ACP_REMOTE_TOKEN_ENV?.trim();
-const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
+const contextRuntime = new ContextRuntimeManager(path.join(stateRoot,'context-runtime.json'));
+const runtimeObservability = new RuntimeObservability({contracts, handoffs, providerLifecycle, contextRuntime, acpSessionDirectory:path.join(stateRoot,'acp'), remoteAcp:{enabled:process.env.AGENT_CONTROL_ACP_REMOTE_ENABLED==='true',authenticationConfigured:Boolean(remoteTokenEnvironment&&process.env[remoteTokenEnvironment]),loopback:['127.0.0.1','::1','localhost'].includes((process.env.AGENT_CONTROL_ACP_REMOTE_HOST??'127.0.0.1').toLowerCase())}});
 identity.registerActor({id: 'web-operator', type: 'human', displayName: 'Authenticated web operator', principalId: 'operator:web', authenticationSource: 'dashboard-bearer', roles: ['operator'], capabilities: [], metadata: {surface: 'dashboard'}});
 const defaultSessionId = 'session:web-operator';
 try { identity.session(defaultSessionId); }

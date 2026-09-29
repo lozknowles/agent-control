@@ -4,6 +4,31 @@
   "updated": "2026-09-29",
   "capabilities": [
     {
+      "id": "runtime.context-aware-admission-management",
+      "title": "Context-aware runtime admission and durable context management",
+      "status": "QUALIFIED",
+      "summary": "Agent Control classifies workloads, treats usable context as a governed resource, admits model/worker/runtime combinations against memory and safety headroom, and can checkpoint, compact, retrieve authoritative state, repair and fail closed while preserving typed provenance and independent verification.",
+      "sources": [
+        "src/control/context-runtime-management.ts",
+        "src/control/runtime-observability.ts",
+        "scripts/qualify-context-runtime-4.20.ts",
+        "assets/dashboard/dashboard-models.js"
+      ],
+      "tests": [
+        "src/control/context-runtime-management.test.ts",
+        "src/control/runtime-observability.test.ts"
+      ],
+      "evidence": [
+        "docs/evidence/agent-control-4.20-context-runtime-qualification.md",
+        "docs/evidence/agent-control-4.20-context-runtime/physical-qualification.json",
+        "AGENT_CONTROL_4.20_CONTEXT_RUNTIME_QUALIFICATION.md",
+        "AGENT_CONTROL_4.20_STATIC_VS_ADAPTIVE.md",
+        "config/context-runtime-benchmark-4.20.json",
+        "docs/known-limitations-4.20.md"
+      ],
+      "limitation": "Physical qualification covers one Qwen3-0.6B Q8 model, one llama.cpp runtime, one Quadro P5000 worker and one deterministic held-out coding task. Adaptive execution verified 2/2 base trials while static verified 0/2, but no general model, task or hardware superiority is claimed; physical rerouting, cached-token telemetry, energy and local monetary cost remain unqualified or unavailable."
+    },
+    {
       "id": "computer-use.provider-neutral-managed-runs",
       "title": "Provider-neutral computer-use STEP and MANAGED_RUN orchestration",
       "status": "QUALIFIED",

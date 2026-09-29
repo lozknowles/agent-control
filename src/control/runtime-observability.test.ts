@@ -7,6 +7,7 @@ import {ContractExecutionRuntime} from './contract-runtime.js';
 import {GovernedHandoffRuntime} from './handoff-runtime.js';
 import {ProviderModelLifecycleRegistry} from './provider-lifecycle.js';
 import {RuntimeObservability} from './runtime-observability.js';
+import {ContextRuntimeManager} from './context-runtime-management.js';
 
 test('runtime projection combines ACP contracts handoffs and model lifecycle without payloads or credentials', async () => {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'agent-control-runtime-observability-')),acpDirectory=path.join(root,'acp');fs.mkdirSync(acpDirectory);
@@ -19,11 +20,13 @@ test('runtime projection combines ACP contracts handoffs and model lifecycle wit
   const lifecycle=new ProviderModelLifecycleRegistry(path.join(root,'lifecycle.json'),()=> '2026-09-01T00:00:00Z');
   lifecycle.registerProvider({id:'provider:one',kind:'openai-compatible',endpoint:'https://models.example/v1',credentialRef:'env:MODEL_PROVIDER_KEY'});
   lifecycle.registerRecipe({id:'recipe:one',version:'1',providerId:'provider:one',providerModel:'vendor/model-one',modelVersion:'2026-09',capabilities:['review'],toolSupport:[],nodeRequirements:['review-node'],runtimeRequirements:['responses']});
-  const runtime=new RuntimeObservability({contracts,handoffs,providerLifecycle:lifecycle,acpSessionDirectory:acpDirectory,remoteAcp:{enabled:true,authenticationConfigured:true,loopback:true},clock:()=> '2026-09-01T00:02:00Z'}),projection=runtime.snapshot();
+  const contextRuntime=new ContextRuntimeManager(undefined,()=> '2026-09-01T00:02:00Z');contextRuntime.recordEvent('job:context','PRESSURE',{percent:81},['evidence:context']);
+  const runtime=new RuntimeObservability({contracts,handoffs,providerLifecycle:lifecycle,contextRuntime,acpSessionDirectory:acpDirectory,remoteAcp:{enabled:true,authenticationConfigured:true,loopback:true},clock:()=> '2026-09-01T00:02:00Z'}),projection=runtime.snapshot();
   assert.equal(projection.acp.sessions[0].deliveryCount,1);assert.equal('cwd' in projection.acp.sessions[0],false);
   assert.equal(projection.contracts[0].pty.writeOwner,null);assert.equal(projection.contracts[0].process.state,'PAUSED');assert.equal('objective' in projection.contracts[0],false);assert.equal('payload' in projection.contracts[0].baton,false);
   assert.equal(projection.handoffs[0].outcome,'YIELD');assert.equal('request' in projection.handoffs[0],false);
   assert.equal(projection.providerLifecycle.providers[0].credentialReference,'indirect');assert.equal(JSON.stringify(projection).includes('MODEL_PROVIDER_KEY'),false);
+  assert.equal(projection.contextManagement.events[0]?.type,'PRESSURE');
   assert.deepEqual(runtime.systems().filter(item=>item.type==='transport').map(item=>item.id),['transport:acp-stdio','transport:acp-remote']);
   assert.equal(runtime.systems().find(item=>item.type==='model')?.execution,'UNKNOWN');
 });
@@ -32,4 +35,5 @@ test('runtime projection reports missing telemetry as absent or unknown rather t
   const projection=new RuntimeObservability({clock:()=> '2026-09-01T00:00:00Z'}).snapshot();
   assert.deepEqual(projection.contracts,[]);assert.deepEqual(projection.handoffs,[]);assert.deepEqual(projection.acp.sessions,[]);
   const remote=projection.acp.transports.find(item=>item.id==='acp-remote');assert.equal(remote?.enabled,false);assert.equal(remote?.connection,'disabled');
+  assert.deepEqual(projection.contextManagement.events,[]);assert.deepEqual(projection.contextManagement.outcomes,[]);
 });

@@ -1,0 +1,788 @@
+{
+  "schema": "agent-control.context-runtime-public-qualification/v1",
+  "benchmarkId": "AC-CTX-420-P5000-001",
+  "classification": "HELD_OUT_QUALIFICATION",
+  "startedAt": "2026-09-29T18:45:38.496Z",
+  "completedAt": "2026-09-29T18:47:31.030Z",
+  "integrity": {
+    "configSha256": "f7c631888411c970567f7b4f6ace3e4879bab99e5e4b4a2c8dd22234930c3ab3",
+    "corpusSha256": "57cee8c83e5ec56b5abff1d1f89530862fc660e252d383b1cca17f078b206c05",
+    "rawEvidenceSha256": "6822a2c29d32934459dd0c36a3f5c3487bec97447cfe204e2a5719cbd45d3100",
+    "modelSha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+    "runtimeSha256": "3f1000482d759661cadb1dc9b59f6292f52408ee0d2906298fa001837517fb4e",
+    "phases": [
+      {
+        "phase": "BASELINE",
+        "configSha256": "b06e3634080d1b4a84cd7740b14010dcd0dde7b939fc6b4df2250a63f4fb7394",
+        "evidenceSha256": "624e1a30a49e94fa22fe262a566494e8500b4016589660f4c662fcf24a6aa88b",
+        "result": "8K stage one exhausted; 16K static exhausted; 16K adaptive verified"
+      },
+      {
+        "phase": "TUNING_1",
+        "configSha256": "8e83e7fcf88eb421e7792b39e761bfc874a0aa5b51dc397d223eda71ee690239",
+        "evidenceSha256": "6b25aca2e48f8b0a36daba8496e63186265d06fdc93746fe4f2d9dea3ef730df",
+        "result": "8K stage one remained 108 tokens above capacity"
+      },
+      {
+        "phase": "TUNING_2",
+        "configSha256": "872c77bea1d5302fca4d4a849a2c69a445dc350f1a8cc958c7a0bf694aa888cd",
+        "evidenceSha256": "dd8ab57983e087ac6ff33fb574ff9095fa9266b49bfb3fd15158819420563952",
+        "result": "8K compacted; generated summary contradicted original evidence; verification failed"
+      },
+      {
+        "phase": "TUNING_3",
+        "configSha256": "ce033ca04da7b613fd5a997a1b9a8efa843b2aa3758e1bd6923a0f3a0f3d78f1",
+        "evidenceSha256": "a3af63292868465a9e4517870d4e609ddd68fff7ac3e001d96f093f797296f44",
+        "result": "Authoritative-only retrieval fixed most requirements; duplicate-removal quality failed"
+      },
+      {
+        "phase": "TUNING_4",
+        "configSha256": "5f03ff557295cccad2f82536f052090821a6e224965947669f58fac553ab3015",
+        "evidenceSha256": "38767a1918ca87304e1fc2f98a83ebba030185353ab70b3786ecfb0658d4f1b8",
+        "result": "One verifier-driven bounded repair produced verified success"
+      },
+      {
+        "phase": "HELD_OUT_QUALIFICATION",
+        "configSha256": "f7c631888411c970567f7b4f6ace3e4879bab99e5e4b4a2c8dd22234930c3ab3",
+        "evidenceSha256": "6822a2c29d32934459dd0c36a3f5c3487bec97447cfe204e2a5719cbd45d3100",
+        "result": "Frozen seed 421 matrix retained without further tuning"
+      }
+    ]
+  },
+  "configuration": {
+    "worker": "hpubuntu-p5000",
+    "accelerator": "Quadro P5000 16 GiB",
+    "model": "Qwen3-0.6B-Q8_0",
+    "modelBytes": 639446688,
+    "runtime": "llama.cpp server 9371 (22d9bc441)",
+    "locality": "LOCAL",
+    "isolatedLoopback": true,
+    "providerChargeCeiling": 0,
+    "validator": "restricted-python-functions/v1"
+  },
+  "trials": [
+    {
+      "id": "static-8k-base",
+      "strategy": "STATIC",
+      "configuration": {
+        "contextTokens": 8192,
+        "flashAttention": "off",
+        "kvCache": "f16",
+        "reasoning": "off"
+      },
+      "status": "FAILED",
+      "providerReportedCompletion": false,
+      "verified": false,
+      "failureClass": "CONTEXT_EXHAUSTION",
+      "context": {
+        "stageOnePromptTokens": 7560,
+        "stageOneCompletionTokens": 51,
+        "measuredPressurePercent": 92.91,
+        "projectedNextUsageTokens": 17052,
+        "finalPromptTokens": null,
+        "finalCompletionTokens": null,
+        "cachedTokens": null
+      },
+      "management": {
+        "compactions": 0,
+        "checkpoints": 1,
+        "retrievals": 0,
+        "reroutes": 0,
+        "repairs": 0,
+        "durableCheckpointSha256": "a8f260269cf969d6c5037ce86010ea2bcff3d47c8982ca65423366bfc7ffe00e",
+        "summaryKind": "MODEL_GENERATED_SUMMARY",
+        "originalEvidenceRetained": true
+      },
+      "resources": {
+        "durationMs": 7916,
+        "ownedPeakVramMiB": 1934,
+        "devicePeakVramMiB": 13427,
+        "ownedPeakRamBytes": 549277696,
+        "providerCharge": 0,
+        "localComputeMonetaryCost": null,
+        "energyWh": null
+      },
+      "evidence": {
+        "stageOneResponseSha256": "b3e89ed2618d2c69532f298c11df26cc27f1a1c4a8f2346af64f9d18969f9477",
+        "initialFinalResponseSha256": "71c4435718580e3835f4af36243e097d6d3868ee1dce22d06dd597a47c29ec21",
+        "repairResponseSha256": null,
+        "finalResponseSha256": "71c4435718580e3835f4af36243e097d6d3868ee1dce22d06dd597a47c29ec21",
+        "validatorSha256": null,
+        "validatorPassed": false
+      }
+    },
+    {
+      "id": "adaptive-8k-base",
+      "strategy": "ADAPTIVE",
+      "configuration": {
+        "contextTokens": 8192,
+        "flashAttention": "off",
+        "kvCache": "f16",
+        "reasoning": "off"
+      },
+      "status": "VERIFIED",
+      "providerReportedCompletion": true,
+      "verified": true,
+      "failureClass": null,
+      "context": {
+        "stageOnePromptTokens": 7560,
+        "stageOneCompletionTokens": 51,
+        "measuredPressurePercent": 92.91,
+        "projectedNextUsageTokens": 17052,
+        "finalPromptTokens": 277,
+        "finalCompletionTokens": 93,
+        "cachedTokens": 0
+      },
+      "management": {
+        "compactions": 1,
+        "checkpoints": 1,
+        "retrievals": 1,
+        "reroutes": 0,
+        "repairs": 1,
+        "durableCheckpointSha256": "43c412f29b49fd4c1654d6f8bacd56001b2c7b07ec3d1cc870b9909063fef51f",
+        "summaryKind": "MODEL_GENERATED_SUMMARY",
+        "originalEvidenceRetained": true
+      },
+      "resources": {
+        "durationMs": 10385,
+        "ownedPeakVramMiB": 1934,
+        "devicePeakVramMiB": 13427,
+        "ownedPeakRamBytes": 1455030272,
+        "providerCharge": 0,
+        "localComputeMonetaryCost": null,
+        "energyWh": null
+      },
+      "evidence": {
+        "stageOneResponseSha256": "37bce2b2ed34f665444c63806c67588b0b3566b4445ef956ca47758112973781",
+        "initialFinalResponseSha256": "6fec368a5d48dc0b48f34e84217ab7d4be94216c520c3304f2132c49bc9c9f85",
+        "repairResponseSha256": "426c1398568a323b3f25f69ce97a175131e6ca12bcbb94e9b4f18a9d6bff1d4d",
+        "finalResponseSha256": "426c1398568a323b3f25f69ce97a175131e6ca12bcbb94e9b4f18a9d6bff1d4d",
+        "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+        "validatorPassed": true
+      }
+    },
+    {
+      "id": "static-16k-base",
+      "strategy": "STATIC",
+      "configuration": {
+        "contextTokens": 16384,
+        "flashAttention": "off",
+        "kvCache": "f16",
+        "reasoning": "off"
+      },
+      "status": "FAILED",
+      "providerReportedCompletion": true,
+      "verified": false,
+      "failureClass": "QUALITY_FAILURE",
+      "context": {
+        "stageOnePromptTokens": 7560,
+        "stageOneCompletionTokens": 51,
+        "measuredPressurePercent": 46.45,
+        "projectedNextUsageTokens": 17052,
+        "finalPromptTokens": 15923,
+        "finalCompletionTokens": 4,
+        "cachedTokens": 0
+      },
+      "management": {
+        "compactions": 0,
+        "checkpoints": 1,
+        "retrievals": 0,
+        "reroutes": 0,
+        "repairs": 1,
+        "durableCheckpointSha256": "2c26755b47150785b0bfee3871546206ee1c8d7c88d918c7cb9f22b6ba60b2b1",
+        "summaryKind": "MODEL_GENERATED_SUMMARY",
+        "originalEvidenceRetained": true
+      },
+      "resources": {
+        "durationMs": 50265,
+        "ownedPeakVramMiB": 3112,
+        "devicePeakVramMiB": 14605,
+        "ownedPeakRamBytes": 576647168,
+        "providerCharge": 0,
+        "localComputeMonetaryCost": null,
+        "energyWh": null
+      },
+      "evidence": {
+        "stageOneResponseSha256": "365dcd9ba707db2d4abd20d1a6167d3d23cb11f2cb01fe9572f5e37a0320c096",
+        "initialFinalResponseSha256": "724c7a1ec26c7c597387e710b9831fe03fcd7fcb5852b5a80de64abdae97de20",
+        "repairResponseSha256": "65e090a04ea03a4f22cdcce55b2c59afbc461dfea0634bc00e571203f3004190",
+        "finalResponseSha256": "65e090a04ea03a4f22cdcce55b2c59afbc461dfea0634bc00e571203f3004190",
+        "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+        "validatorPassed": false
+      }
+    },
+    {
+      "id": "adaptive-16k-base",
+      "strategy": "ADAPTIVE",
+      "configuration": {
+        "contextTokens": 16384,
+        "flashAttention": "off",
+        "kvCache": "f16",
+        "reasoning": "off"
+      },
+      "status": "VERIFIED",
+      "providerReportedCompletion": true,
+      "verified": true,
+      "failureClass": null,
+      "context": {
+        "stageOnePromptTokens": 7560,
+        "stageOneCompletionTokens": 51,
+        "measuredPressurePercent": 46.45,
+        "projectedNextUsageTokens": 17052,
+        "finalPromptTokens": 277,
+        "finalCompletionTokens": 93,
+        "cachedTokens": 0
+      },
+      "management": {
+        "compactions": 1,
+        "checkpoints": 1,
+        "retrievals": 1,
+        "reroutes": 0,
+        "repairs": 1,
+        "durableCheckpointSha256": "93bb96299ba9e6da81200f2518401f052a58ea5921fb4416042067cf5682c505",
+        "summaryKind": "MODEL_GENERATED_SUMMARY",
+        "originalEvidenceRetained": true
+      },
+      "resources": {
+        "durationMs": 10485,
+        "ownedPeakVramMiB": 3104,
+        "devicePeakVramMiB": 14597,
+        "ownedPeakRamBytes": 1472151552,
+        "providerCharge": 0,
+        "localComputeMonetaryCost": null,
+        "energyWh": null
+      },
+      "evidence": {
+        "stageOneResponseSha256": "1be99b7a6a0c20bc8dea819394dc1db168ec67ea0093141ec1f9abad0eb9b223",
+        "initialFinalResponseSha256": "e4fe2171b38ad90b6edf3e38a5866202fa7fd80bdc88865e25a94958b3c31153",
+        "repairResponseSha256": "763e008d07404b684e54b97b0d2ef99665bb653f6418fa5b27f45dfc1579efae",
+        "finalResponseSha256": "763e008d07404b684e54b97b0d2ef99665bb653f6418fa5b27f45dfc1579efae",
+        "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+        "validatorPassed": true
+      }
+    },
+    {
+      "id": "adaptive-8k-flash",
+      "strategy": "ADAPTIVE",
+      "configuration": {
+        "contextTokens": 8192,
+        "flashAttention": "on",
+        "kvCache": "f16",
+        "reasoning": "off"
+      },
+      "status": "VERIFIED",
+      "providerReportedCompletion": true,
+      "verified": true,
+      "failureClass": null,
+      "context": {
+        "stageOnePromptTokens": 7560,
+        "stageOneCompletionTokens": 89,
+        "measuredPressurePercent": 93.37,
+        "projectedNextUsageTokens": 17090,
+        "finalPromptTokens": 277,
+        "finalCompletionTokens": 93,
+        "cachedTokens": 0
+      },
+      "management": {
+        "compactions": 1,
+        "checkpoints": 1,
+        "retrievals": 1,
+        "reroutes": 0,
+        "repairs": 1,
+        "durableCheckpointSha256": "420a305404b447436c6106e56cb312b96d7bb14155f8024aefbad5db83208bb4",
+        "summaryKind": "MODEL_GENERATED_SUMMARY",
+        "originalEvidenceRetained": true
+      },
+      "resources": {
+        "durationMs": 8310,
+        "ownedPeakVramMiB": 1910,
+        "devicePeakVramMiB": 13403,
+        "ownedPeakRamBytes": 1427914752,
+        "providerCharge": 0,
+        "localComputeMonetaryCost": null,
+        "energyWh": null
+      },
+      "evidence": {
+        "stageOneResponseSha256": "5093df7a9deeb44c5c2e6ec4f1585e66f26019498094f9a572d2ac8b15674676",
+        "initialFinalResponseSha256": "1b8d21471be409cc5d4207b0e4d64e5e2a761ede43b759604f8b7dd29315e4d0",
+        "repairResponseSha256": "963e5d7843c533d93330d9eb940e117b5bc2aac578778e364629538992b01cad",
+        "finalResponseSha256": "963e5d7843c533d93330d9eb940e117b5bc2aac578778e364629538992b01cad",
+        "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+        "validatorPassed": true
+      }
+    },
+    {
+      "id": "adaptive-8k-flash-kvq8",
+      "strategy": "ADAPTIVE",
+      "configuration": {
+        "contextTokens": 8192,
+        "flashAttention": "on",
+        "kvCache": "q8_0",
+        "reasoning": "off"
+      },
+      "status": "FAILED",
+      "providerReportedCompletion": true,
+      "verified": false,
+      "failureClass": "QUALITY_FAILURE",
+      "context": {
+        "stageOnePromptTokens": 7560,
+        "stageOneCompletionTokens": 51,
+        "measuredPressurePercent": 92.91,
+        "projectedNextUsageTokens": 17052,
+        "finalPromptTokens": 277,
+        "finalCompletionTokens": 46,
+        "cachedTokens": 0
+      },
+      "management": {
+        "compactions": 1,
+        "checkpoints": 1,
+        "retrievals": 1,
+        "reroutes": 0,
+        "repairs": 1,
+        "durableCheckpointSha256": "c025e4aa9c5906d4eaab0aa85cbcb326cc10f97aa69be56f7f3fb57ef7442f95",
+        "summaryKind": "MODEL_GENERATED_SUMMARY",
+        "originalEvidenceRetained": true
+      },
+      "resources": {
+        "durationMs": 7421,
+        "ownedPeakVramMiB": 1518,
+        "devicePeakVramMiB": 13011,
+        "ownedPeakRamBytes": 1006321664,
+        "providerCharge": 0,
+        "localComputeMonetaryCost": null,
+        "energyWh": null
+      },
+      "evidence": {
+        "stageOneResponseSha256": "88cbad43291a99e05fb25d93be0142be85a44867a57b8abdc9be78daa2f6fab5",
+        "initialFinalResponseSha256": "66e458c416f88f52fc258698f28e120987da4507a76e4aee250131c7d25574d7",
+        "repairResponseSha256": "98ecf9ede1da514e43c8477b9acff6cc8374468918b1087e7363a97a4e4f9fef",
+        "finalResponseSha256": "98ecf9ede1da514e43c8477b9acff6cc8374468918b1087e7363a97a4e4f9fef",
+        "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+        "validatorPassed": false
+      }
+    },
+    {
+      "id": "adaptive-8k-flash-kvq8-reasoning",
+      "strategy": "ADAPTIVE",
+      "configuration": {
+        "contextTokens": 8192,
+        "flashAttention": "on",
+        "kvCache": "q8_0",
+        "reasoning": "on"
+      },
+      "status": "VERIFIED",
+      "providerReportedCompletion": true,
+      "verified": true,
+      "failureClass": null,
+      "context": {
+        "stageOnePromptTokens": 7556,
+        "stageOneCompletionTokens": 220,
+        "measuredPressurePercent": 94.92,
+        "projectedNextUsageTokens": 17217,
+        "finalPromptTokens": 216,
+        "finalCompletionTokens": 386,
+        "cachedTokens": 0
+      },
+      "management": {
+        "compactions": 1,
+        "checkpoints": 1,
+        "retrievals": 1,
+        "reroutes": 0,
+        "repairs": 0,
+        "durableCheckpointSha256": "f33d941d4f9de59d82dc80b3d6f05e4f9745eac98ef5dc53ba8d5c33709236ad",
+        "summaryKind": "MODEL_GENERATED_SUMMARY",
+        "originalEvidenceRetained": true
+      },
+      "resources": {
+        "durationMs": 11989,
+        "ownedPeakVramMiB": 1518,
+        "devicePeakVramMiB": 13011,
+        "ownedPeakRamBytes": 1000488960,
+        "providerCharge": 0,
+        "localComputeMonetaryCost": null,
+        "energyWh": null
+      },
+      "evidence": {
+        "stageOneResponseSha256": "0765a3eb556ab021b52067771857e9241cf6fb6b3aa49712389e0e746e5a7ca1",
+        "initialFinalResponseSha256": "a3cb174ce520d05bb4e1f20c037b4e0fff23a4d31670865e238afd79ffc88600",
+        "repairResponseSha256": null,
+        "finalResponseSha256": "a3cb174ce520d05bb4e1f20c037b4e0fff23a4d31670865e238afd79ffc88600",
+        "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+        "validatorPassed": true
+      }
+    }
+  ],
+  "staticVersusAdaptive": {
+    "static": {
+      "attempts": 2,
+      "providerCompletions": 1,
+      "verifiedSuccesses": 0,
+      "providerCompletionRate": 0.5,
+      "verifiedSuccessRate": 0,
+      "providerChargePerAttempt": 0,
+      "providerChargePerCompletion": 0,
+      "providerChargePerVerifiedSuccess": null,
+      "timePerVerifiedSuccessMs": null,
+      "localComputeMonetaryCost": null,
+      "energyPerVerifiedSuccessWh": null
+    },
+    "adaptive": {
+      "attempts": 2,
+      "providerCompletions": 2,
+      "verifiedSuccesses": 2,
+      "providerCompletionRate": 1,
+      "verifiedSuccessRate": 1,
+      "providerChargePerAttempt": 0,
+      "providerChargePerCompletion": 0,
+      "providerChargePerVerifiedSuccess": 0,
+      "timePerVerifiedSuccessMs": 10435,
+      "localComputeMonetaryCost": null,
+      "energyPerVerifiedSuccessWh": null
+    },
+    "result": "Adaptive verified 2/2 base trials; static verified 0/2. This bounded task demonstrates value from checkpoint, context reset, authoritative retrieval and one allowed verifier-driven repair; it does not establish general model superiority."
+  },
+  "runtimeTechniques": {
+    "flashAttention": {
+      "control": {
+        "id": "adaptive-8k-base",
+        "strategy": "ADAPTIVE",
+        "configuration": {
+          "contextTokens": 8192,
+          "flashAttention": "off",
+          "kvCache": "f16",
+          "reasoning": "off"
+        },
+        "status": "VERIFIED",
+        "providerReportedCompletion": true,
+        "verified": true,
+        "failureClass": null,
+        "context": {
+          "stageOnePromptTokens": 7560,
+          "stageOneCompletionTokens": 51,
+          "measuredPressurePercent": 92.91,
+          "projectedNextUsageTokens": 17052,
+          "finalPromptTokens": 277,
+          "finalCompletionTokens": 93,
+          "cachedTokens": 0
+        },
+        "management": {
+          "compactions": 1,
+          "checkpoints": 1,
+          "retrievals": 1,
+          "reroutes": 0,
+          "repairs": 1,
+          "durableCheckpointSha256": "43c412f29b49fd4c1654d6f8bacd56001b2c7b07ec3d1cc870b9909063fef51f",
+          "summaryKind": "MODEL_GENERATED_SUMMARY",
+          "originalEvidenceRetained": true
+        },
+        "resources": {
+          "durationMs": 10385,
+          "ownedPeakVramMiB": 1934,
+          "devicePeakVramMiB": 13427,
+          "ownedPeakRamBytes": 1455030272,
+          "providerCharge": 0,
+          "localComputeMonetaryCost": null,
+          "energyWh": null
+        },
+        "evidence": {
+          "stageOneResponseSha256": "37bce2b2ed34f665444c63806c67588b0b3566b4445ef956ca47758112973781",
+          "initialFinalResponseSha256": "6fec368a5d48dc0b48f34e84217ab7d4be94216c520c3304f2132c49bc9c9f85",
+          "repairResponseSha256": "426c1398568a323b3f25f69ce97a175131e6ca12bcbb94e9b4f18a9d6bff1d4d",
+          "finalResponseSha256": "426c1398568a323b3f25f69ce97a175131e6ca12bcbb94e9b4f18a9d6bff1d4d",
+          "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+          "validatorPassed": true
+        }
+      },
+      "candidate": {
+        "id": "adaptive-8k-flash",
+        "strategy": "ADAPTIVE",
+        "configuration": {
+          "contextTokens": 8192,
+          "flashAttention": "on",
+          "kvCache": "f16",
+          "reasoning": "off"
+        },
+        "status": "VERIFIED",
+        "providerReportedCompletion": true,
+        "verified": true,
+        "failureClass": null,
+        "context": {
+          "stageOnePromptTokens": 7560,
+          "stageOneCompletionTokens": 89,
+          "measuredPressurePercent": 93.37,
+          "projectedNextUsageTokens": 17090,
+          "finalPromptTokens": 277,
+          "finalCompletionTokens": 93,
+          "cachedTokens": 0
+        },
+        "management": {
+          "compactions": 1,
+          "checkpoints": 1,
+          "retrievals": 1,
+          "reroutes": 0,
+          "repairs": 1,
+          "durableCheckpointSha256": "420a305404b447436c6106e56cb312b96d7bb14155f8024aefbad5db83208bb4",
+          "summaryKind": "MODEL_GENERATED_SUMMARY",
+          "originalEvidenceRetained": true
+        },
+        "resources": {
+          "durationMs": 8310,
+          "ownedPeakVramMiB": 1910,
+          "devicePeakVramMiB": 13403,
+          "ownedPeakRamBytes": 1427914752,
+          "providerCharge": 0,
+          "localComputeMonetaryCost": null,
+          "energyWh": null
+        },
+        "evidence": {
+          "stageOneResponseSha256": "5093df7a9deeb44c5c2e6ec4f1585e66f26019498094f9a572d2ac8b15674676",
+          "initialFinalResponseSha256": "1b8d21471be409cc5d4207b0e4d64e5e2a761ede43b759604f8b7dd29315e4d0",
+          "repairResponseSha256": "963e5d7843c533d93330d9eb940e117b5bc2aac578778e364629538992b01cad",
+          "finalResponseSha256": "963e5d7843c533d93330d9eb940e117b5bc2aac578778e364629538992b01cad",
+          "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+          "validatorPassed": true
+        }
+      },
+      "conclusion": "Both verified. Candidate elapsed time was lower in one trial; no general latency claim."
+    },
+    "kvCacheQ8": {
+      "control": {
+        "id": "adaptive-8k-flash",
+        "strategy": "ADAPTIVE",
+        "configuration": {
+          "contextTokens": 8192,
+          "flashAttention": "on",
+          "kvCache": "f16",
+          "reasoning": "off"
+        },
+        "status": "VERIFIED",
+        "providerReportedCompletion": true,
+        "verified": true,
+        "failureClass": null,
+        "context": {
+          "stageOnePromptTokens": 7560,
+          "stageOneCompletionTokens": 89,
+          "measuredPressurePercent": 93.37,
+          "projectedNextUsageTokens": 17090,
+          "finalPromptTokens": 277,
+          "finalCompletionTokens": 93,
+          "cachedTokens": 0
+        },
+        "management": {
+          "compactions": 1,
+          "checkpoints": 1,
+          "retrievals": 1,
+          "reroutes": 0,
+          "repairs": 1,
+          "durableCheckpointSha256": "420a305404b447436c6106e56cb312b96d7bb14155f8024aefbad5db83208bb4",
+          "summaryKind": "MODEL_GENERATED_SUMMARY",
+          "originalEvidenceRetained": true
+        },
+        "resources": {
+          "durationMs": 8310,
+          "ownedPeakVramMiB": 1910,
+          "devicePeakVramMiB": 13403,
+          "ownedPeakRamBytes": 1427914752,
+          "providerCharge": 0,
+          "localComputeMonetaryCost": null,
+          "energyWh": null
+        },
+        "evidence": {
+          "stageOneResponseSha256": "5093df7a9deeb44c5c2e6ec4f1585e66f26019498094f9a572d2ac8b15674676",
+          "initialFinalResponseSha256": "1b8d21471be409cc5d4207b0e4d64e5e2a761ede43b759604f8b7dd29315e4d0",
+          "repairResponseSha256": "963e5d7843c533d93330d9eb940e117b5bc2aac578778e364629538992b01cad",
+          "finalResponseSha256": "963e5d7843c533d93330d9eb940e117b5bc2aac578778e364629538992b01cad",
+          "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+          "validatorPassed": true
+        }
+      },
+      "candidate": {
+        "id": "adaptive-8k-flash-kvq8",
+        "strategy": "ADAPTIVE",
+        "configuration": {
+          "contextTokens": 8192,
+          "flashAttention": "on",
+          "kvCache": "q8_0",
+          "reasoning": "off"
+        },
+        "status": "FAILED",
+        "providerReportedCompletion": true,
+        "verified": false,
+        "failureClass": "QUALITY_FAILURE",
+        "context": {
+          "stageOnePromptTokens": 7560,
+          "stageOneCompletionTokens": 51,
+          "measuredPressurePercent": 92.91,
+          "projectedNextUsageTokens": 17052,
+          "finalPromptTokens": 277,
+          "finalCompletionTokens": 46,
+          "cachedTokens": 0
+        },
+        "management": {
+          "compactions": 1,
+          "checkpoints": 1,
+          "retrievals": 1,
+          "reroutes": 0,
+          "repairs": 1,
+          "durableCheckpointSha256": "c025e4aa9c5906d4eaab0aa85cbcb326cc10f97aa69be56f7f3fb57ef7442f95",
+          "summaryKind": "MODEL_GENERATED_SUMMARY",
+          "originalEvidenceRetained": true
+        },
+        "resources": {
+          "durationMs": 7421,
+          "ownedPeakVramMiB": 1518,
+          "devicePeakVramMiB": 13011,
+          "ownedPeakRamBytes": 1006321664,
+          "providerCharge": 0,
+          "localComputeMonetaryCost": null,
+          "energyWh": null
+        },
+        "evidence": {
+          "stageOneResponseSha256": "88cbad43291a99e05fb25d93be0142be85a44867a57b8abdc9be78daa2f6fab5",
+          "initialFinalResponseSha256": "66e458c416f88f52fc258698f28e120987da4507a76e4aee250131c7d25574d7",
+          "repairResponseSha256": "98ecf9ede1da514e43c8477b9acff6cc8374468918b1087e7363a97a4e4f9fef",
+          "finalResponseSha256": "98ecf9ede1da514e43c8477b9acff6cc8374468918b1087e7363a97a4e4f9fef",
+          "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+          "validatorPassed": false
+        }
+      },
+      "conclusion": "Q8 KV used less observed owned VRAM but failed independent quality verification; not promoted."
+    },
+    "reasoning": {
+      "control": {
+        "id": "adaptive-8k-flash-kvq8",
+        "strategy": "ADAPTIVE",
+        "configuration": {
+          "contextTokens": 8192,
+          "flashAttention": "on",
+          "kvCache": "q8_0",
+          "reasoning": "off"
+        },
+        "status": "FAILED",
+        "providerReportedCompletion": true,
+        "verified": false,
+        "failureClass": "QUALITY_FAILURE",
+        "context": {
+          "stageOnePromptTokens": 7560,
+          "stageOneCompletionTokens": 51,
+          "measuredPressurePercent": 92.91,
+          "projectedNextUsageTokens": 17052,
+          "finalPromptTokens": 277,
+          "finalCompletionTokens": 46,
+          "cachedTokens": 0
+        },
+        "management": {
+          "compactions": 1,
+          "checkpoints": 1,
+          "retrievals": 1,
+          "reroutes": 0,
+          "repairs": 1,
+          "durableCheckpointSha256": "c025e4aa9c5906d4eaab0aa85cbcb326cc10f97aa69be56f7f3fb57ef7442f95",
+          "summaryKind": "MODEL_GENERATED_SUMMARY",
+          "originalEvidenceRetained": true
+        },
+        "resources": {
+          "durationMs": 7421,
+          "ownedPeakVramMiB": 1518,
+          "devicePeakVramMiB": 13011,
+          "ownedPeakRamBytes": 1006321664,
+          "providerCharge": 0,
+          "localComputeMonetaryCost": null,
+          "energyWh": null
+        },
+        "evidence": {
+          "stageOneResponseSha256": "88cbad43291a99e05fb25d93be0142be85a44867a57b8abdc9be78daa2f6fab5",
+          "initialFinalResponseSha256": "66e458c416f88f52fc258698f28e120987da4507a76e4aee250131c7d25574d7",
+          "repairResponseSha256": "98ecf9ede1da514e43c8477b9acff6cc8374468918b1087e7363a97a4e4f9fef",
+          "finalResponseSha256": "98ecf9ede1da514e43c8477b9acff6cc8374468918b1087e7363a97a4e4f9fef",
+          "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+          "validatorPassed": false
+        }
+      },
+      "candidate": {
+        "id": "adaptive-8k-flash-kvq8-reasoning",
+        "strategy": "ADAPTIVE",
+        "configuration": {
+          "contextTokens": 8192,
+          "flashAttention": "on",
+          "kvCache": "q8_0",
+          "reasoning": "on"
+        },
+        "status": "VERIFIED",
+        "providerReportedCompletion": true,
+        "verified": true,
+        "failureClass": null,
+        "context": {
+          "stageOnePromptTokens": 7556,
+          "stageOneCompletionTokens": 220,
+          "measuredPressurePercent": 94.92,
+          "projectedNextUsageTokens": 17217,
+          "finalPromptTokens": 216,
+          "finalCompletionTokens": 386,
+          "cachedTokens": 0
+        },
+        "management": {
+          "compactions": 1,
+          "checkpoints": 1,
+          "retrievals": 1,
+          "reroutes": 0,
+          "repairs": 0,
+          "durableCheckpointSha256": "f33d941d4f9de59d82dc80b3d6f05e4f9745eac98ef5dc53ba8d5c33709236ad",
+          "summaryKind": "MODEL_GENERATED_SUMMARY",
+          "originalEvidenceRetained": true
+        },
+        "resources": {
+          "durationMs": 11989,
+          "ownedPeakVramMiB": 1518,
+          "devicePeakVramMiB": 13011,
+          "ownedPeakRamBytes": 1000488960,
+          "providerCharge": 0,
+          "localComputeMonetaryCost": null,
+          "energyWh": null
+        },
+        "evidence": {
+          "stageOneResponseSha256": "0765a3eb556ab021b52067771857e9241cf6fb6b3aa49712389e0e746e5a7ca1",
+          "initialFinalResponseSha256": "a3cb174ce520d05bb4e1f20c037b4e0fff23a4d31670865e238afd79ffc88600",
+          "repairResponseSha256": null,
+          "finalResponseSha256": "a3cb174ce520d05bb4e1f20c037b4e0fff23a4d31670865e238afd79ffc88600",
+          "validatorSha256": "68fd9d9c237d108e2b19196ea8b853bf2b64b5f166d6f0784ece188b4ef1c84c",
+          "validatorPassed": true
+        }
+      },
+      "conclusion": "Reasoning-on verified where the matched reasoning-off arm failed, but one pair is not a general preference."
+    }
+  },
+  "capacityProbes": [
+    {
+      "contextTokens": 32768,
+      "status": "COMPLETED",
+      "runtimeContextTokens": 32768,
+      "modelTrainingContextTokens": 40960,
+      "providerResponseObserved": true,
+      "independentTaskVerification": false,
+      "classification": "CAPACITY_PROBE_ONLY"
+    },
+    {
+      "contextTokens": 65536,
+      "status": "UNSUPPORTED",
+      "reason": "UNSUPPORTED_MODEL_CONTEXT_LIMIT",
+      "classification": "UNSUPPORTED_NOT_EXECUTED"
+    }
+  ],
+  "safety": {
+    "protectedServiceHealthyBefore": true,
+    "protectedServiceHealthyAfter": true,
+    "protectedHealthBodyUnchanged": true,
+    "protectedProcessesPreserved": true,
+    "protectedProcessCountBefore": 3,
+    "protectedProcessCountAfter": 3,
+    "productionChanged": false
+  },
+  "unknown": {
+    "energyWh": "UNKNOWN",
+    "localComputeMonetaryCost": "UNKNOWN",
+    "cachedTokens": "PARTIAL",
+    "externalProviderCharge": "NOT_APPLICABLE_LOCAL"
+  },
+  "verdict": "PHYSICAL_CONTEXT_RUNTIME_QUALIFIED_WITH_LIMITATIONS"
+}

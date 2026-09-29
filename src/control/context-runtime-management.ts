@@ -175,6 +175,16 @@ export interface RuntimeOutcomeObservation {
   providerCharge: number | null;
   evidence: string[];
   observedAt: string;
+  providerId?: string;
+  inputTokens?: number | null;
+  generatedTokens?: number | null;
+  cachedTokens?: number | null;
+  peakRamBytes?: number | null;
+  peakVramBytes?: number | null;
+  contextPressureEvents?: number;
+  compactions?: number;
+  checkpoints?: number;
+  reroutes?: number;
 }
 
 export interface VerifiedHistoryRow {
