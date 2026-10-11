@@ -10,6 +10,7 @@ export interface ExternalSessionObservation {
   sourcePathHash:string; evidenceHash:string; line:number;
   counterBasis:'message'|'cumulative'; supersedes:string|null;
   providerRequestId?:string|null; providerId?:string|null;
+  sourceGeneration?:number;
 }
 export interface ExternalSessionSnapshot {
   observations:ExternalSessionObservation[];

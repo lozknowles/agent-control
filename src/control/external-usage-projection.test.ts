@@ -19,6 +19,29 @@ test('Codex lifetime evidence is unallocated; later bounded interval uses only o
   assert.equal(view.apiCost,null);
 });
 
+test('regressed cumulative counter does not manufacture recovery usage',()=>{
+  const snap=parseExternalSessionLog('codex',log(meta,count('2026-10-11T01:00:00Z',100),count('2026-10-11T02:00:00Z',50),count('2026-10-11T03:00:00Z',120)),'fixture');
+  const view=projectExternalUsage(reconcileExternalSnapshots([snap]),date('2026-10-11T00:00:00Z'),date('2026-10-12T00:00:00Z'),[]);
+  assert.equal(view.rows.filter(r=>r.allocation==='BOUNDED_INTERVAL').length,0);
+  assert.ok(view.rows.some(r=>r.allocation==='COUNTER_REGRESSION_UNRESOLVED'&&r.periodUsage===null));
+});
+
+test('interval enclosing the entire period stays visible as unallocated',()=>{
+  const snap=parseExternalSessionLog('codex',log(meta,count('2026-10-10T23:00:00Z',100),count('2026-10-12T01:00:00Z',200)),'fixture');
+  const view=projectExternalUsage(reconcileExternalSnapshots([snap]),date('2026-10-11T00:00:00Z'),date('2026-10-12T00:00:00Z'),[]);
+  assert.equal(view.rows.length,1);
+  assert.equal(view.rows[0]?.allocation,'CROSSES_PERIOD_BOUNDARY');
+  assert.equal(view.rows[0]?.periodUsage,null);
+});
+
+test('increasing counters across source rewrite do not imply a continuous interval',()=>{
+  const snap=parseExternalSessionLog('codex',log(meta,count('2026-10-11T01:00:00Z',100),count('2026-10-11T02:00:00Z',200)),'fixture');
+  snap.observations[0]!.sourceGeneration=0;snap.observations[1]!.sourceGeneration=1;
+  const view=projectExternalUsage(reconcileExternalSnapshots([snap]),date('2026-10-11T00:00:00Z'),date('2026-10-12T00:00:00Z'),[]);
+  assert.equal(view.rows.find(r=>r.intervalStart)?.allocation,'SOURCE_GENERATION_BOUNDARY');
+  assert.equal(view.rows.find(r=>r.intervalStart)?.periodUsage,null);
+});
+
 test('Claude message event stays separate from native totals and missing cache values',()=>{
   const message={type:'assistant',sessionId:'s',timestamp:'2026-10-11T12:00:00Z',message:{id:'m',model:'fixture',usage:{input_tokens:7,output_tokens:3}}};
   const snap=parseExternalSessionLog('claude',log(message),'fixture');
@@ -41,6 +64,8 @@ test('explicit request and provider with attested matching counters confirms evi
   assert.equal(matched.coverage.combinedNativeExternalTotalAvailable,false);
   const conflict=projectExternalUsage(report,date('2026-10-11T00:00:00Z'),date('2026-10-12T00:00:00Z'),[{...native,accounting:{...native.accounting,evidence:{...native.accounting.evidence,output:4}}}]);
   assert.equal(conflict.rows[0]?.nativeOverlap,'CONFLICTING_REQUEST_ID');
+  const incompatible=projectExternalUsage(report,date('2026-10-11T00:00:00Z'),date('2026-10-12T00:00:00Z'),[{...native,accounting:{...native.accounting,semantics:{...native.accounting.semantics,reasoning:'ADDITIONAL'}}}]);
+  assert.equal(incompatible.rows[0]?.nativeOverlap,'CONFLICTING_REQUEST_ID');
 });
 
 test('external dashboard response respects native query row limit and reports coverage',()=>{

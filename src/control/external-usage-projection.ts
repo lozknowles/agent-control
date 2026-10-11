@@ -7,7 +7,7 @@ const counters:TokenKey[]=['input','cachedInput','cacheWrite','output','reasonin
 const within=(at:string,start:number,end:number)=>{const n=Date.parse(at);return Number.isFinite(n)&&n>=start&&n<end;};
 const observation=(r:ExternalSessionObservation)=>({id:r.id,source:r.usage.source,sessionId:r.usage.sessionId,eventId:r.usage.eventId,at:r.usage.at,model:r.usage.model,
   usage:r.usage,sourcePathHash:r.sourcePathHash,evidenceHash:r.evidenceHash,revision:r.revision,counterBasis:r.counterBasis,
-  providerRequestId:r.providerRequestId??null,providerId:r.providerId??null});
+  providerRequestId:r.providerRequestId??null,providerId:r.providerId??null,sourceGeneration:r.sourceGeneration??0});
 
 /** External evidence stays outside native totals, prices, resets and job outcomes. */
 export function projectExternalUsage(report:ExternalReport,start:number,end:number,native:ModelInvocationObservation[],filters:Record<string,string>={},limit=200){
@@ -25,7 +25,7 @@ export function projectExternalUsage(report:ExternalReport,start:number,end:numb
     // and attested counter semantics. It never changes native billing or ledger rows.
     const exact=nativeMatches.filter(n=>{
       const a=n.accounting,u=r.usage;
-      return r.counterBasis==='message'&&base.providerId!==null&&n.provider===base.providerId&&a?.semantics.input==='EXCLUDES_CACHE'&&a.semantics.reasoning!=='UNKNOWN'&&
+      return r.counterBasis==='message'&&base.providerId!==null&&n.provider===base.providerId&&a?.semantics.input==='EXCLUDES_CACHE'&&a.semantics.reasoning==='IN_OUTPUT'&&
         u.input!==null&&u.cachedInput!==null&&u.cacheWrite!==null&&u.output!==null&&
         a.evidence.input===u.input&&a.evidence.cached===u.cachedInput&&a.evidence.cacheWrite===u.cacheWrite&&a.evidence.output===u.output;
     });
@@ -38,15 +38,23 @@ export function projectExternalUsage(report:ExternalReport,start:number,end:numb
     const history=(revisions.get(r.id)??[]).filter(v=>v.counterBasis==='cumulative').sort((a,b)=>Date.parse(a.usage.at)-Date.parse(b.usage.at)||a.revision-b.revision);
     const first=history[0];
     if(first&&within(first.usage.at,start,end)){rows.push({...observation(first),allocation:'SESSION_LIFETIME_UNKNOWN_START',confidence:'UNALLOCATED',nativeOverlap,nativeInvocationIds:nativeMatches.map(n=>n.id),periodUsage:null,intervalStart:null,intervalEnd:first.usage.at});unallocatedIntervals++;}
-    let allocated=false;
+    let allocated=false,tainted=false;
     for(let i=1;i<history.length;i++){
       const prior=history[i-1]!,current=history[i]!;
-      if(!within(current.usage.at,start,end)&&!within(prior.usage.at,start,end))continue;
-      const fullyInside=Date.parse(prior.usage.at)>=start&&Date.parse(current.usage.at)<end;
+      const priorTime=Date.parse(prior.usage.at),currentTime=Date.parse(current.usage.at);
+      const generationChanged=(prior.sourceGeneration??0)!==(current.sourceGeneration??0);
+      const regressed=counters.some(k=>prior.usage[k]!==null&&(current.usage[k]===null||current.usage[k]!<prior.usage[k]!));
+      if(generationChanged)tainted=false;
+      if(regressed)tainted=true;
+      // A rejected regression makes subsequent deltas ambiguous until a new source generation.
+      if(!(priorTime<end&&currentTime>start))continue;
+      const fullyInside=priorTime>=start&&currentTime<end;
       const delta=Object.fromEntries(counters.map(k=>[k,prior.usage[k]===null||current.usage[k]===null||current.usage[k]!<prior.usage[k]!?null:current.usage[k]!-prior.usage[k]!])) as Record<TokenKey,number|null>;
       const stableModel=prior.usage.model!==null&&prior.usage.model===current.usage.model;
-      rows.push({...observation(current),allocation:fullyInside?'BOUNDED_INTERVAL':'CROSSES_PERIOD_BOUNDARY',confidence:fullyInside?'OBSERVED_INTERVAL':'UNALLOCATED',nativeOverlap,nativeInvocationIds:nativeMatches.map(n=>n.id),periodUsage:fullyInside?delta:null,model:stableModel?current.usage.model:null,intervalStart:prior.usage.at,intervalEnd:current.usage.at});
-      if(!fullyInside)unallocatedIntervals++;allocated=true;
+      const allocatable=fullyInside&&!tainted&&!generationChanged&&currentTime>priorTime;
+      const allocation=regressed||tainted?'COUNTER_REGRESSION_UNRESOLVED':generationChanged?'SOURCE_GENERATION_BOUNDARY':currentTime<=priorTime?'TIMESTAMP_AMBIGUOUS':fullyInside?'BOUNDED_INTERVAL':'CROSSES_PERIOD_BOUNDARY';
+      rows.push({...observation(current),allocation,confidence:allocatable?'OBSERVED_INTERVAL':'UNALLOCATED',nativeOverlap,nativeInvocationIds:nativeMatches.map(n=>n.id),periodUsage:allocatable?delta:null,model:stableModel?current.usage.model:null,intervalStart:prior.usage.at,intervalEnd:current.usage.at});
+      if(!allocatable)unallocatedIntervals++;allocated=true;
     }
     // The first cumulative snapshot has no observed lower boundary. It is lifetime evidence only.
     if(!allocated&&!first&&within(r.usage.at,start,end)){rows.push({...base,allocation:'SESSION_LIFETIME_UNKNOWN_START',confidence:'UNALLOCATED',nativeOverlap,nativeInvocationIds:nativeMatches.map(n=>n.id),periodUsage:null,intervalStart:null,intervalEnd:r.usage.at});unallocatedIntervals++;}

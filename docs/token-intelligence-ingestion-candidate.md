@@ -1,5 +1,7 @@
 # External session ingestion candidate — 11 October 2026
 
+Historical prototype record for `adf9a601`. Current Work candidate behaviour and limits are in [token-intelligence-work-candidate-20261011.md](token-intelligence-work-candidate-20261011.md); statements below about absent persistence or dashboard integration describe that earlier commit only.
+
 Experimental, not release qualified. Based on 80cbbff4f8b94b0ba430562e69ff5efa67c65745.
 No production services, canonical historical ledger, pricing tables or scheduler changed.
 

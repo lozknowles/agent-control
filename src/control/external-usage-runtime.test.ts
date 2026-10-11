@@ -28,6 +28,20 @@ test('manifest rejects relative source paths before any source read',async()=>{
   }finally{await rm(dir,{recursive:true,force:true});}
 });
 
+test('corrupt durable evidence during refresh fails external reads closed without timer rejection',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'external-usage-corrupt-'));
+  const source=join(dir,'session.jsonl'),manifest=join(dir,'manifest.json');
+  let runtime:Awaited<ReturnType<typeof startExternalUsageRuntime>>|undefined;
+  try{
+    await writeFile(source,JSON.stringify({type:'assistant',sessionId:'s',timestamp:'2026-10-11T12:00:00Z',message:{id:'m',usage:{input_tokens:1,output_tokens:1}}})+'\n');
+    await writeFile(manifest,JSON.stringify({schema:'agent-control.external-usage-manifest/v1',files:[{source:'claude',file:source}]}));
+    runtime=await startExternalUsageRuntime(manifest,dir,3600000);
+    await writeFile(join(dir,'external-usage','evidence.json'),'corrupt');
+    await runtime.refresh();
+    assert.throws(()=>runtime!.snapshot(),/external_store_corrupt/);
+  }finally{runtime?.close();await rm(dir,{recursive:true,force:true});}
+});
+
 test('manifest pins the initially authorized canonical symlink target',async t=>{
   const dir=await mkdtemp(join(tmpdir(),'external-usage-link-'));
   const first=join(dir,'first.jsonl'),second=join(dir,'second.jsonl'),link=join(dir,'chosen.jsonl'),manifest=join(dir,'manifest.json');

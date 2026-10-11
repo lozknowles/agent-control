@@ -46,6 +46,7 @@ test('Truncation and same-size rewrite retain revisions and expose source genera
   await writeFile(file,jsonl(meta,ping(100)));
   const rewrite=await store.ingest([{source:'codex',file}]);
   assert.equal(rewrite.cursors[0]!.generation,1);assert.ok(rewrite.gaps.some(g=>g.reason==='source_rewritten'));
+  assert.deepEqual(rewrite.revisions.map(r=>r.sourceGeneration),[0,1]);
   assert.equal(rewrite.rows[0]!.usage.input,200);assert.equal(rewrite.revisions.length,2);
   await writeFile(file,jsonl(meta));const truncated=await store.ingest([{source:'codex',file}]);
   assert.equal(truncated.cursors[0]!.generation,2);assert.ok(truncated.gaps.some(g=>g.reason==='source_truncated'));

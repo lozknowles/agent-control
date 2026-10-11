@@ -1,5 +1,7 @@
 # Token Intelligence validation — 11 October 2026
 
+Historical validation of `adf9a601`, superseded by [token-intelligence-work-candidate-20261011.md](token-intelligence-work-candidate-20261011.md). The dashboard and storage statements below apply to the prototype only.
+
 Status: experimental library/CLI candidate; NOT RELEASE QUALIFIED. Nothing pushed, merged or deployed.
 
 Starting commit: 80cbbff4f8b94b0ba430562e69ff5efa67c65745

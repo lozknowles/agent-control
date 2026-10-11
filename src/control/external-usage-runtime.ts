@@ -24,17 +24,21 @@ export async function startExternalUsageRuntime(manifestPath:string,stateRoot:st
   if(new Set(files.map(f=>f.source+'\0'+resolve(f.file))).size!==files.length)throw Error('external_manifest_duplicate_source');
   const store=new ExternalSessionStore(join(stateRoot,'external-usage','evidence.json'));
   let latest:ExternalSessionStoreReport & {freshness:'CURRENT'|'STALE_SOURCE_ERROR'}={...await store.snapshot(),freshness:'STALE_SOURCE_ERROR'};
+  let fatalError:Error|null=null;
   let running=false;
   const refresh=async()=>{
     if(running)return;running=true;
     try{
       for(const file of files)if(await realpath(file.file)!==file.file)throw Error('external_source_target_changed');
-      latest={...await store.ingest(files),freshness:'CURRENT'};
+      latest={...await store.ingest(files),freshness:'CURRENT'};fatalError=null;
     }
-    catch{latest={...await store.snapshot(),freshness:'STALE_SOURCE_ERROR'};}
+    catch{
+      try{latest={...await store.snapshot(),freshness:'STALE_SOURCE_ERROR'};fatalError=null;}
+      catch(error){fatalError=error instanceof Error?error:Error('external_store_unavailable');}
+    }
     finally{running=false;}
   };
   await refresh();
   const timer=setInterval(()=>void refresh(),pollMs);timer.unref();
-  return {snapshot:()=>latest,refresh,close:()=>clearInterval(timer)};
+  return {snapshot:()=>{if(fatalError)throw fatalError;return latest;},refresh,close:()=>clearInterval(timer)};
 }

@@ -1,5 +1,7 @@
 # Token Intelligence: Codeburn-inspired integration candidate (11 October 2026)
 
+Historical design record for the initial prototype. See [token-intelligence-work-candidate-20261011.md](token-intelligence-work-candidate-20261011.md) for the current local candidate; the disabled-runtime statements below are superseded.
+
 **Status: EXPERIMENTAL / NOT RELEASE READY.** Isolated integration branch; no production dashboard, scheduler, deployment, price table or canonical ledger modified.
 
 ## Repository inspection

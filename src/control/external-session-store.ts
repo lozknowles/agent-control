@@ -50,7 +50,7 @@ export class ExternalSessionStore {
         if(!hashed(s.sourcePathHash)||!hashed(s.contentHash)||!integer(s.duplicates)||!Array.isArray(s.observations)||!Array.isArray(s.gaps))throw Error();
         for(const gap of s.gaps)if(!integer(gap.line)||typeof gap.reason!=='string')throw Error();
         for(const o of s.observations){
-          if(!hashed(o.id)||!hashed(o.sourcePathHash)||!hashed(o.evidenceHash)||!integer(o.line)||!integer(o.revision)||!['message','cumulative'].includes(o.counterBasis)||!(o.supersedes===null||hashed(o.supersedes)))throw Error();
+          if(!hashed(o.id)||!hashed(o.sourcePathHash)||!hashed(o.evidenceHash)||!integer(o.line)||!integer(o.revision)||!(o.sourceGeneration===undefined||integer(o.sourceGeneration))||!['message','cumulative'].includes(o.counterBasis)||!(o.supersedes===null||hashed(o.supersedes)))throw Error();
           const u=o.usage;
           const normalized=normalizeExternalUsage({source:u.source,externalSessionId:u.sessionId,externalEventId:u.eventId,at:u.at,model:u.model??undefined,inputTokens:u.input??undefined,cachedInputTokens:u.cachedInput??undefined,cacheWriteTokens:u.cacheWrite??undefined,outputTokens:u.output??undefined,reasoningOutputTokens:u.reasoningOutput??undefined,cacheReadIsIncludedInInput:u.source==='codex'});
           if(JSON.stringify(normalized)!==JSON.stringify(u))throw Error();
@@ -99,6 +99,7 @@ export class ExternalSessionStore {
             const snapshot=parseExternalSessionLog(input.source,buffer.subarray(0,completeLength).toString('utf8'),canonical,cursor.parserState,cursor.line);
             const previousRows=new Map(state.snapshots.flatMap(s=>s.observations).map(o=>[o.id,o]));
             for(const observation of snapshot.observations){
+              observation.sourceGeneration=cursor.generation;
               const previous=previousRows.get(observation.id);
               if(previous){observation.revision=previous.revision+1;observation.supersedes=previous.evidenceHash;}
               previousRows.set(observation.id,observation);
