@@ -47,7 +47,7 @@ test('Android selects the procfs-backed process-group termination adapter', asyn
   const adapter = processTerminationAdapterFor('android'), identity = await adapter.capture(process.pid);
   assert.equal(adapter.platform, 'android');
   assert.equal(identity.platform, 'android');
-  assert.ok(identity.startedAtToken);
+  if(process.platform==='linux'||process.platform==='android')assert.ok(identity.startedAtToken);else assert.equal(identity.startedAtToken,null);
 });
 
 test('platform termination adapter reports confirmed tree cleanup without requiring Windows', async () => {
@@ -138,7 +138,7 @@ for (const exitCode of [0, 7]) test('owned process drains inherited output befor
   const scope: ExecutionSessionScope = {runId: 'drain-run', jobId: 'drain-job', jobVersion: '1.0.0', stepId: 'drain', actionId: 'drain@1.0.0', workerId: 'drain-worker', nodeId: 'controller'};
   const manager = new OwnedProcessManager(undefined, sessions, scope), lines: string[] = [];
   const tail = "setTimeout(() => { process.stdout.write('late stdout'); process.stderr.write('late stderr'); }, 120)";
-  const source = "require('node:child_process').spawn(process.execPath, ['-e', " + JSON.stringify(tail) + "], {stdio: ['ignore', process.stdout, process.stderr]}); process.stdout.write(" + JSON.stringify('early' + String.fromCharCode(10)) + "); process.exit(" + exitCode + ")";
+  const source = "require('node:child_process').spawn(process.execPath, ['-e', " + JSON.stringify(tail) + "], {stdio: ['ignore', process.stdout, process.stderr]}); process.stdout.write(" + JSON.stringify('early' + String.fromCharCode(10)) + (process.platform==='win32'?"); process.exitCode = ":"); process.exit(") + exitCode + (process.platform==='win32'?"":")");
   const result = await manager.runProcess({command: process.execPath, args: ['-e', source], onStdoutLine: line => lines.push(line), session: {terminal: 'pipe', transformOutputLine: (_stream, line) => line}});
   assert.equal(result.exitCode, exitCode);
   assert.equal(result.stdout, 'early\nlate stdout'); assert.equal(result.stderr, 'late stderr');
@@ -148,4 +148,19 @@ for (const exitCode of [0, 7]) test('owned process drains inherited output befor
   const restarted = new ExecutionSessionRuntime(path.join(root, 'sessions'));
   assert.equal(restarted.transcript(id), transcript);
   assert.equal(restarted.get(id).state, exitCode === 0 ? 'EXITED' : 'FAILED');
+});
+
+
+test('Windows inventory failure cannot certify cleanup or authorize a tree kill', async () => {
+  const {WindowsTerminationAdapter} = await import('./owned-process.js'); let kills=0;
+  const adapter = new WindowsTerminationAdapter(async()=>null, async()=>{kills++;return 0;});
+  const identity={pid:42,platform:'win32' as const,startedAtToken:'fixture',capturedAt:'fixture'};
+  const result=await adapter.terminate(identity, {} as any, 'fixture');
+  assert.equal(result.outcome,'uncertain');assert.equal(kills,0);
+});
+test('Windows inventory failure after termination remains uncertain', async () => {
+  const {WindowsTerminationAdapter} = await import('./owned-process.js');let calls=0;
+  const adapter=new WindowsTerminationAdapter(async()=>++calls===1?[{pid:42,parentPid:1,startedAtToken:'fixture'}]:null,async()=>0);
+  const result=await adapter.terminate({pid:42,platform:'win32',startedAtToken:'fixture',capturedAt:'fixture'},{} as any,'fixture');
+  assert.equal(result.outcome,'uncertain');assert.equal(calls,2);
 });

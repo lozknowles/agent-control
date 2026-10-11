@@ -160,7 +160,7 @@ class LinuxTerminationAdapter implements ProcessTerminationAdapter {
 
 interface WindowsProcessIdentity {pid: number; startedAtToken: string; parentPid: number;}
 
-function runWindowsInventory(rootPid: number): Promise<WindowsProcessIdentity[]> {
+function runWindowsInventory(rootPid: number): Promise<WindowsProcessIdentity[] | null> {
   const source = [
     "$ErrorActionPreference = 'Stop'",
     '$root = [int]$env:AGENT_CONTROL_OWNED_PID',
@@ -171,14 +171,14 @@ function runWindowsInventory(rootPid: number): Promise<WindowsProcessIdentity[]>
     '[Console]::Out.Write(($result | ConvertTo-Json -Compress))',
   ].join('\n');
   return new Promise(resolve => {
-    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', '-'], {env: {...process.env, AGENT_CONTROL_OWNED_PID: String(rootPid)}, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore']});
+    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', source], {env: {...process.env, AGENT_CONTROL_OWNED_PID: String(rootPid)}, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore']});
     let output = '', settled = false;
-    const finish = (value: WindowsProcessIdentity[]) => { if (settled) return; settled = true; resolve(value); };
-    const timer = setTimeout(() => { child.kill(); finish([]); }, 2_000);
+    const finish = (value: WindowsProcessIdentity[] | null) => { if (settled) return; settled = true; resolve(value); };
+    const timer = setTimeout(() => { child.kill(); finish(null); }, 2_000);
     child.stdout?.on('data', chunk => { if (output.length < 256 * 1024) output += chunk; });
-    child.once('error', () => { clearTimeout(timer); finish([]); });
-    child.once('close', code => { clearTimeout(timer); if (code !== 0) { finish([]); return; } try { const parsed = JSON.parse(output || '[]'); finish((Array.isArray(parsed) ? parsed : [parsed]).filter(item => Number.isSafeInteger(item?.pid) && typeof item?.startedAtToken === 'string')); } catch { finish([]); } });
-    child.stdin?.end(source);
+    child.once('error', () => { clearTimeout(timer); finish(null); });
+    child.once('close', code => { clearTimeout(timer); if (code !== 0) { finish(null); return; } try { const parsed = JSON.parse(output); finish((Array.isArray(parsed) ? parsed : [parsed]).filter(item => Number.isSafeInteger(item?.pid) && typeof item?.startedAtToken === 'string')); } catch { finish(null); } });
+    child.stdin?.end();
   });
 }
 
@@ -190,19 +190,23 @@ function taskkillTree(pid: number): Promise<number | null> {
   });
 }
 
-class WindowsTerminationAdapter implements ProcessTerminationAdapter {
+export class WindowsTerminationAdapter implements ProcessTerminationAdapter {
   readonly platform = 'win32' as const;
-  async capture(pid: number): Promise<OwnedProcessIdentity> { const root = (await runWindowsInventory(pid)).find(item => item.pid === pid); return {pid, platform: this.platform, startedAtToken: root?.startedAtToken ?? null, capturedAt: timestamp()}; }
+  constructor(readonly inventory = runWindowsInventory, readonly killTree = taskkillTree) {}
+  async capture(pid: number): Promise<OwnedProcessIdentity> { const root = (await this.inventory(pid) ?? []).find(item => item.pid === pid); return {pid, platform: this.platform, startedAtToken: root?.startedAtToken ?? null, capturedAt: timestamp()}; }
   async terminate(identity: OwnedProcessIdentity, _child: ChildProcess, reason: string): Promise<ProcessCleanupResult> {
-    const requestedAt = timestamp(), before = await runWindowsInventory(identity.pid), root = before.find(item => item.pid === identity.pid), signals: string[] = [];
+    const requestedAt = timestamp(), before = await this.inventory(identity.pid), signals: string[] = [];
+    if (before === null) return {identity, outcome:'uncertain', reason, signals, requestedAt, verifiedAt:timestamp(), detail:'windows_process_inventory_unavailable'};
+    const root = before.find(item => item.pid === identity.pid);
     if (root && identity.startedAtToken && root.startedAtToken !== identity.startedAtToken) return {identity, outcome: 'identity-mismatch', reason, signals, requestedAt, verifiedAt: timestamp(), detail: 'leader_pid_reused_before_taskkill'};
     if (!root && before.length === 0) return {identity, outcome: 'confirmed', reason, signals, requestedAt, verifiedAt: timestamp(), detail: 'process_tree_already_absent'};
     if (!root || !identity.startedAtToken) return {identity, outcome: 'uncertain', reason, signals, requestedAt, verifiedAt: timestamp(), detail: 'windows_process_identity_unavailable'};
-    const code = await taskkillTree(identity.pid); signals.push(`taskkill-tree:${code === null ? 'spawn-failed' : code}`);
+    const code = await this.killTree(identity.pid); signals.push(`taskkill-tree:${code === null ? 'spawn-failed' : code}`);
     const captured = new Map(before.map(item => [item.pid, item.startedAtToken]));
     const gone = await (async () => {
       for (let attempt = 0; attempt < 20; attempt++) {
-        const after = await runWindowsInventory(identity.pid);
+        const after = await this.inventory(identity.pid);
+        if (after === null) return false;
         if (!after.some(item => captured.get(item.pid) === item.startedAtToken)) return true;
         await delay(50);
       }
