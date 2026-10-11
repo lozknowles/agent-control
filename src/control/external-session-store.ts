@@ -132,7 +132,11 @@ export class ExternalSessionStore {
     const encoded=JSON.stringify({state,checksum:digest(JSON.stringify(state))});
     if(Buffer.byteLength(encoded)>CAPACITY)throw Error('external_store_capacity');
     const temporary=this.file+'.'+randomUUID()+'.tmp';
-    try{const handle=await open(temporary,'wx',0o600);try{await handle.writeFile(encoded);await handle.sync();}finally{await handle.close();}await rename(temporary,this.file);}
+    try{const handle=await open(temporary,'wx',0o600);try{await handle.writeFile(encoded);await handle.sync();}finally{await handle.close();}await rename(temporary,this.file);
+      // Persist the directory entry where the platform exposes directory fsync.
+      // Windows process-crash tests do not establish physical power-loss durability.
+      if(process.platform!=='win32'){const directory=await open(dirname(this.file),'r');try{await directory.sync();}finally{await directory.close();}}
+    }
     finally{await unlink(temporary).catch(()=>{});}
   }
 }
