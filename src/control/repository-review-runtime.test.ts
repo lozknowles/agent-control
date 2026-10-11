@@ -11,7 +11,7 @@ function repository(){const parent=fs.mkdtempSync(path.join(os.tmpdir(),'ac-revi
 
 test('snapshot preparation rejects an outside-root symlink without changing its target',t=>{
   const f=repository(),outside=path.join(f.parent,'outside-marker.txt');t.after(()=>{fs.chmodSync(f.source,0o700);fs.rmSync(f.parent,{recursive:true,force:true});});
-  fs.writeFileSync(outside,'OUTSIDE_MARKER\n',{mode:0o600});const before=fs.statSync(outside).mode&0o777;fs.symlinkSync(outside,path.join(f.source,'escape'));git(f.source,'add','escape');git(f.source,'commit','-qm','add outside link');
+  fs.writeFileSync(outside,'OUTSIDE_MARKER\n',{mode:0o600});const before=fs.statSync(outside).mode&0o777;const linkBlob=execFileSync('git',['-C',f.source,'hash-object','-w','--stdin'],{input:'../outside-marker.txt',encoding:'utf8'}).trim();git(f.source,'update-index','--add','--cacheinfo','120000,'+linkBlob+',escape');git(f.source,'commit','-qm','add outside link');
   const resolver=new LocalRepositoryResolver();assert.throws(()=>resolver.resolve({nodeId:'local',repository:f.source,requestedRef:'HEAD',allowedRoots:[f.parent],snapshotsRoot:f.snapshots}),/repository_snapshot_symlink_unsafe/);
   assert.equal(fs.readFileSync(outside,'utf8'),'OUTSIDE_MARKER\n');assert.equal(fs.statSync(outside).mode&0o777,before);
 });

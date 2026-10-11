@@ -25,7 +25,7 @@ param([string]$PayloadLine)
     $dirtyFingerprint = if ([string]::IsNullOrWhiteSpace($dirtyText)) { $null } else { $sha = [Security.Cryptography.SHA256]::Create(); try { ([BitConverter]::ToString($sha.ComputeHash($utf8.GetBytes($dirtyText)))).Replace('-', '').ToLowerInvariant() } finally { $sha.Dispose() } }
     $temporary = Join-Path ([IO.Path]::GetTempPath()) ('agent-control-repository-' + [Guid]::NewGuid().ToString('N') + '.tar')
     try {
-      & git -C $repository archive --format=tar --output=$temporary $reviewedSha
+      & git -c core.autocrlf=false -C $repository archive --format=tar --output=$temporary $reviewedSha
       if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $temporary -PathType Leaf)) { Fail 'repository_snapshot_failed' }
       $archiveBytes = (Get-Item -LiteralPath $temporary).Length
       if ($archiveBytes -le 0 -or $archiveBytes -gt 49283072) { Fail 'repository_snapshot_archive_too_large' }

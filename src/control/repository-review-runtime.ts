@@ -52,6 +52,17 @@ export class LocalRepositoryResolver implements RepositoryResolver {
 }
 
 function makeReadOnly(root: string) {
+  // Windows may materialize Git symlinks as ordinary files. Validate the tree
+  // metadata as well as filesystem links before applying read-only permissions.
+  if (fs.existsSync(path.join(root, '.git'))) {
+    for (const record of git(root, ['ls-tree', '-r', '-z', 'HEAD']).split('\0').filter(Boolean)) {
+      const match = /^120000 blob ([a-f0-9]+)\t([\s\S]+)$/.exec(record);
+      if (!match) continue;
+      const target = execFileSync('git', ['-C', root, 'cat-file', 'blob', match[1]], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']});
+      const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(match[2]), target.replaceAll('\\', '/')));
+      if (path.isAbsolute(target) || path.win32.isAbsolute(target) || resolved === '..' || resolved.startsWith('../')) throw new ParameterizedJobError('repository_snapshot_symlink_unsafe', match[2]);
+    }
+  }
   const canonicalRoot = fs.realpathSync(root), entries: string[] = [];
   const inside = (candidate: string) => { const relative = path.relative(canonicalRoot, candidate); return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative)); };
   const walk = (directory: string) => { for (const entry of fs.readdirSync(directory, {withFileTypes: true})) { const absolute = path.join(directory, entry.name); if (entry.isSymbolicLink()) { let target: string; try { target = fs.realpathSync(absolute); } catch { throw new ParameterizedJobError('repository_snapshot_symlink_unsafe', path.relative(root, absolute)); } if (!inside(target)) throw new ParameterizedJobError('repository_snapshot_symlink_unsafe', path.relative(root, absolute)); continue; } entries.push(absolute); if (entry.isDirectory()) walk(absolute); } };
