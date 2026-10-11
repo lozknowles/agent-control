@@ -145,7 +145,7 @@ export interface FastExecutionRunner {
  * configured one-attempt policy cannot fan out behind the control boundary.
  */
 export class CodexFastExecutionRunner implements FastExecutionRunner {
-  constructor(readonly cwd: string, readonly command = 'codex', readonly timeoutMs = 120_000) {
+  constructor(readonly cwd: string, readonly command = 'codex', readonly timeoutMs = 120_000, readonly commandPrefixArgs: readonly string[] = []) {
     if (!path.isAbsolute(cwd)) throw new Error('spark_workspace_must_be_absolute');
   }
   async execute(input: {model: string; providerId: string; baton: SparkBaton; attempt: number}): Promise<FastExecutionResult> {
@@ -156,7 +156,7 @@ export class CodexFastExecutionRunner implements FastExecutionRunner {
     try {
       fs.writeFileSync(schema, JSON.stringify({type: 'object', properties: {status: {type: 'string', enum: ['SUCCEEDED','FAILED','ESCALATE']}, summary: {type: 'string'}, confidence: {type: 'number', minimum: 0, maximum: 1}, requestedMoreContext: {type: 'boolean'}}, required: ['status','summary','confidence','requestedMoreContext'], additionalProperties: false}), {mode: 0o600});
       const prompt = `Execute this Agent Control baton exactly. Stay inside its file and line scope. Do not release, deploy, access credentials, alter policy, or expand scope. Run only the listed deterministic verifier commands. If anything is ambiguous, outside scope, or cannot be verified, return ESCALATE.\n\n${JSON.stringify(input.baton)}`;
-      const run = await capture(this.command, ['exec', '--ephemeral', '--json', '--sandbox', 'workspace-write', '--ignore-user-config', '-c', 'features.multi_agent=false', '--model', input.model, '--output-schema', schema, prompt], this.cwd, this.timeoutMs);
+      const run = await capture(this.command, [...this.commandPrefixArgs, 'exec', '--ephemeral', '--json', '--sandbox', 'workspace-write', '--ignore-user-config', '-c', 'features.multi_agent=false', '--model', input.model, '--output-schema', schema, prompt], this.cwd, this.timeoutMs);
       const events = run.stdout.split(/\r?\n/).filter(Boolean).flatMap(line => { try { return [JSON.parse(line) as Record<string, unknown>]; } catch { return []; } });
       const completed = [...events].reverse().find(event => event.type === 'turn.completed'), message = [...events].reverse().map(event => event.item).find(item => item && typeof item === 'object' && !Array.isArray(item) && (item as Record<string, unknown>).type === 'agent_message') as Record<string, unknown> | undefined;
       let output: {status: FastExecutionResult['status']; summary: string; confidence: number; requestedMoreContext: boolean} = {status: 'FAILED', summary: run.code === 0 ? 'spark_result_missing' : `codex_exec_failed:${run.code}`, confidence: 0, requestedMoreContext: false};

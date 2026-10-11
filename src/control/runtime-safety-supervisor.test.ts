@@ -20,7 +20,7 @@ test('runtime safety allows bounded reads and audits scoped writes independently
 });
 
 test('canonical scope checks deny traversal, prefix confusion, symlink escapes, relative and foreign-platform paths', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-safety-canonical-')), repository = path.join(root, 'project'), outside = path.join(root, 'secrets'); fs.mkdirSync(repository); fs.mkdirSync(outside); fs.symlinkSync(outside, path.join(repository, 'escape'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-safety-canonical-')), repository = path.join(root, 'project'), outside = path.join(root, 'secrets'); fs.mkdirSync(repository); fs.mkdirSync(outside); fs.symlinkSync(outside, path.join(repository, 'escape'), process.platform==='win32'?'junction':'dir');
   const supervisor = new RuntimeSafetySupervisor({id: 'scopes', approvedRepositoryRoots: [repository, 'C:\\Work\\project']});
   assert.equal(supervisor.assess(intent({stepId: 'inside-new', repositoryScope: [path.join(repository, 'new', 'output.txt')]})).outcome, 'ALLOW');
   assert.equal(supervisor.assess(intent({stepId: 'traversal', repositoryScope: [path.join(repository, '..', 'secrets')]})).outcome, 'DENY');

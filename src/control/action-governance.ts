@@ -221,5 +221,23 @@ function splitShellChain(line: string) {
   for (let index = 0; index < line.length; index++) { const char = line[index], next = line[index + 1]; if (escaped) { current += char; escaped = false; continue; } if (char === '\\' && quote !== "'") { current += char; escaped = true; continue; } if (quote) { current += char; if (char === quote) quote = ''; continue; } if (char === "'" || char === '"') { quote = char; current += char; continue; } if (char === ';' || char === '&' && next === '&') { if (current.trim()) segments.push(current.trim()); current = ''; if (char === '&') index++; continue; } if (char === '&') throw new Error('governed_git_shell_construct_unsupported'); current += char; }
   if (quote || escaped) throw new Error('governed_git_shell_syntax_invalid'); if (current.trim()) segments.push(current.trim()); return segments;
 }
-function shellWords(value: string) { const words: string[] = []; let current = '', quote = '', escaped = false; for (const char of value) { if (escaped) { current += char; escaped = false; continue; } if (char === '\\' && quote !== "'") { escaped = true; continue; } if (quote) { if (char === quote) quote = ''; else current += char; continue; } if (char === "'" || char === '"') { quote = char; continue; } if (/\s/.test(char)) { if (current) { words.push(current); current = ''; } continue; } current += char; } if (quote || escaped) throw new Error('governed_git_shell_syntax_invalid'); if (current) words.push(current); return words; }
+function shellWords(value: string) {
+  const words: string[]=[]; let current='',quote='';
+  for(let index=0;index<value.length;index++){
+    const char=value[index];
+    if(char==='\\'&&quote!=="'"){
+      const next=value[index+1];
+      // POSIX double quotes only escape shell-special characters. Ordinary
+      // backslashes in quoted Windows paths must survive canonical resolution.
+      if(!quote||next&&['$',String.fromCharCode(96),'"','\\','\n'].includes(next)){if(!next)throw new Error('governed_git_shell_syntax_invalid');current+=next;index++;continue;}
+    }
+    if(quote){if(char===quote)quote='';else current+=char;continue;}
+    if(char==="'"||char==='"'){quote=char;continue;}
+    if(/\s/.test(char)){if(current){words.push(current);current='';}continue;}
+    current+=char;
+  }
+  if(quote)throw new Error('governed_git_shell_syntax_invalid');
+  if(current)words.push(current);return words;
+}
+
 function shaText(value: string) { return createHash('sha256').update(value).digest('hex'); }

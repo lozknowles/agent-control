@@ -1,3 +1,4 @@
+import {assertOwnerOnly} from './private-files.js';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
@@ -100,7 +101,7 @@ test('coordinator persists one complete routing decision in the shared telemetry
 test('file fast-execution ledger survives restart without converting unknown values to zero', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-fast-ledger-')), file = path.join(root, 'attempts.json'), ledger = new FileFastExecutionLedger(file);
   const value = new FastExecutionCoordinator(registry(), available, {execute: async () => result({usage: undefined})}, {verify: async () => ({passed: true, evidence: ['verified']})}, enabled, undefined, () => new Date('2026-09-01T00:00:00.000Z'), ledger);
-  await value.execute(request(), 'controller'); const restored = new FileFastExecutionLedger(file).list(); assert.equal(restored.length, 1); assert.equal(restored[0].cost, null); assert.equal(restored[0].filesRead, null); assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+  await value.execute(request(), 'controller'); const restored = new FileFastExecutionLedger(file).list(); assert.equal(restored.length, 1); assert.equal(restored[0].cost, null); assert.equal(restored[0].filesRead, null); assertOwnerOnly(file);
 });
 
 test('real Spark runner reports and containment rejects an untracked out-of-scope file', async t => {
@@ -109,7 +110,7 @@ test('real Spark runner reports and containment rejects an untracked out-of-scop
   fs.mkdirSync(path.join(root, 'docs')); fs.writeFileSync(path.join(root, 'docs/guide.md'), 'guide\n'); execFileSync('git', ['add', '.'], {cwd: root}); execFileSync('git', ['commit', '-qm', 'fixture'], {cwd: root});
   const command = path.join(root, 'fake-codex.mjs');
   fs.writeFileSync(command, `#!/usr/bin/env node\nimport fs from 'node:fs';\nfs.writeFileSync('outside scope.txt', 'unauthorised\\n');\nconsole.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:JSON.stringify({status:'SUCCEEDED',summary:'done',confidence:.99,requestedMoreContext:false})}}));\nconsole.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:1,output_tokens:1}}));\n`); fs.chmodSync(command, 0o700); execFileSync('git', ['add', command], {cwd: root}); execFileSync('git', ['commit', '-qm', 'runner'], {cwd: root});
-  const value = new FastExecutionCoordinator(registry(), available, new CodexFastExecutionRunner(root, command), {verify: async () => ({passed: true, evidence: ['must-not-run']})}, enabled);
+  const value = new FastExecutionCoordinator(registry(), available, new CodexFastExecutionRunner(root, process.execPath, 120_000, [command]), {verify: async () => ({passed: true, evidence: ['must-not-run']})}, enabled);
   const outcome = await value.execute(request(), 'controller');
   assert.equal(outcome.telemetry.outcome, 'ESCALATED');
   assert.equal(outcome.telemetry.escalationReason, 'unapproved-file-touched');
@@ -122,6 +123,6 @@ test('real Spark runner detects mutation of valuable ignored state', async t => 
   fs.mkdirSync(path.join(root, 'docs')); fs.writeFileSync(path.join(root, 'docs/guide.md'), 'guide\n'); fs.writeFileSync(path.join(root, '.gitignore'), 'operator.state\n'); execFileSync('git', ['add', '.'], {cwd: root}); execFileSync('git', ['commit', '-qm', 'fixture'], {cwd: root}); fs.writeFileSync(path.join(root, 'operator.state'), 'valuable\n');
   const command = path.join(root, 'fake-codex.mjs');
   fs.writeFileSync(command, `#!/usr/bin/env node\nimport fs from 'node:fs';\nfs.writeFileSync('operator.state', 'silently changed\\n');\nconsole.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:JSON.stringify({status:'SUCCEEDED',summary:'done',confidence:.99,requestedMoreContext:false})}}));\nconsole.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:1,output_tokens:1}}));\n`); fs.chmodSync(command, 0o700); execFileSync('git', ['add', '-f', command], {cwd: root}); execFileSync('git', ['commit', '-qm', 'runner'], {cwd: root});
-  const outcome = await new FastExecutionCoordinator(registry(), available, new CodexFastExecutionRunner(root, command), {verify: async () => ({passed: true, evidence: ['must-not-run']})}, enabled).execute(request(), 'controller');
+  const outcome = await new FastExecutionCoordinator(registry(), available, new CodexFastExecutionRunner(root, process.execPath, 120_000, [command]), {verify: async () => ({passed: true, evidence: ['must-not-run']})}, enabled).execute(request(), 'controller');
   assert.equal(outcome.telemetry.outcome, 'ESCALATED'); assert.equal(outcome.telemetry.escalationReason, 'unapproved-file-touched'); assert.deepEqual(outcome.result?.touchedFiles, ['operator.state']);
 });

@@ -75,7 +75,7 @@ function publishExclusive(fileSystem, temporary, target) {
   // boundary without weakening permissions or replacing an existing config.
   fileSystem.copyFileSync(temporary, target, fileSystem.constants.COPYFILE_EXCL);
   fileSystem.chmodSync(target, 0o600);
-  const descriptor = fileSystem.openSync(target, 'r');
+  const descriptor = fileSystem.openSync(target, 'r+');
   try {
     fileSystem.fsyncSync(descriptor);
   } finally {

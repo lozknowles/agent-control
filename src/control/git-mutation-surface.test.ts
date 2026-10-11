@@ -32,7 +32,7 @@ test('complete Git mutation surface includes tracked, staged, deleted, renamed a
 
 test('staged additions and unusual filenames are parsed without line-oriented filename splitting', async t => {
   const root = repository(); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
-  const unusual = 'line break\nand spaces.txt';
+  const unusual = process.platform==='win32'?'unicode-ø and spaces.txt':'line break\nand spaces.txt';
   fs.writeFileSync(path.join(root, unusual), 'safe\n'); git(root, 'add', unusual);
   const surface = await inspectGitMutationSurface(root);
   assert.deepEqual(surface.touchedFiles, [unusual]);

@@ -64,7 +64,7 @@ test('semantic Git effect resolution covers direct, refspec, force, mirror, dele
     'git push --mirror origin',
     'sh -c "git push origin HEAD:master"',
     'git status && git push origin HEAD:master',
-    `git -C ${repository} push origin HEAD:master`,
+    `git -C ${JSON.stringify(repository)} push origin HEAD:master`,
   ];
   for (const proposal of proposals) {
     const operations = parseGovernedGitProposal(proposal, repository), effects = resolveGitEffects(operations);
@@ -77,7 +77,7 @@ test('production JobRuntime denies every protected-ref mutation before execution
   const setup = fixture(); git(setup.repository, 'remote', 'add', 'review-alias', setup.remote); const proposals = [
     'git push origin feature:master', 'git push origin HEAD:master', 'git push --force origin feature:master', 'git push origin +feature:master',
     'git push --delete origin master', 'git push origin :master', 'git push --mirror origin', 'sh -c "git push origin HEAD:master"',
-    'git status && git push origin HEAD:master', `git -C ${setup.repository} push origin HEAD:master`, 'git push review-alias HEAD:master',
+    'git status && git push origin HEAD:master', `git -C ${JSON.stringify(setup.repository)} push origin HEAD:master`, 'git push review-alias HEAD:master',
   ];
   for (const proposal of proposals) {
     const run = await runProposal(setup, proposal);

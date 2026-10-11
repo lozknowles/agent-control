@@ -10,6 +10,7 @@ for(const mismatch of [false,true])test('adapter uses explicit ADB routing and c
 
 for(const mode of ['healthy','missing','unhealthy','ambiguous'])test('protected service helper '+mode+' uses health only and configured identity',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'recovery-service-'));try{const source=fs.readFileSync(new URL('../../assets/runtime/llama-invocation.py',import.meta.url),'utf8');const script=`
+os.getuid=lambda:1000
 RealPath=Path
 args=['/configured/server','--port','12345']
 present=${mode==='missing'?0:mode==='ambiguous'?2:1}

@@ -8,6 +8,16 @@ test('saved receipt and stale verification cannot certify cleanup',()=>{assert.e
 for(const legacy of [true,false])for(const unhealthy of [true,false])for(const active of [true,false])test('helper performs live inspection despite saved PASS legacy='+legacy+' unhealthy='+unhealthy+' active='+active,()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'current-cleanup-'));try{const source=fs.readFileSync(new URL('../../assets/runtime/llama-invocation.py',import.meta.url),'utf8');
  const script=`
+FilesystemPath=Path
+if os.name=='nt':
+ os.getuid=lambda:1000
+ procroot=FilesystemPath(${JSON.stringify(root)})/'synthetic-proc'
+ (procroot/'sys/kernel/random').mkdir(parents=True)
+ (procroot/'sys/kernel/random/boot_id').write_text('synthetic-boot')
+ current=procroot/str(os.getpid())
+ current.mkdir()
+ (current/'stat').write_text(str(os.getpid())+' (fixture) '+' '.join(['S']+['0']*18+['42']))
+ Path=lambda x:procroot if x=='/proc' else procroot/'sys/kernel/random/boot_id' if x=='/proc/sys/kernel/random/boot_id' else FilesystemPath(x)
 root=Path(${JSON.stringify(root)})
 producer={'runId':'run-1','stepId':'step','target':'device','environment':'env'}
 raw={'producer':producer,'originalServiceRestored':True,'runtimeNeverStarted':True}
@@ -24,7 +34,7 @@ class Entry:
  def __truediv__(self,x):return self
  def read_bytes(self):return bytes([0]).join([b'original',b'--port',b'19000',b''])
 class Proc:
- def __truediv__(self,x):return RealPath('/proc')/x
+ def __truediv__(self,x):return (procroot if os.name=='nt' else RealPath('/proc'))/x
  def iterdir(self):return [Entry()]
 Path=lambda x:Proc() if x=='/proc' else RealPath(x)
 health=lambda endpoint:${unhealthy?'False':'True'}

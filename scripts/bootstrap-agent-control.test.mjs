@@ -9,7 +9,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 const bootstrap = path.join(repositoryRoot, 'scripts/bootstrap-agent-control.sh');
 
 test('published Linux bootstrap is executable and retains the no-build path', () => {
-  assert.notEqual(fs.statSync(bootstrap).mode & 0o111, 0);
+  if(process.platform==='win32')assert.match(execFileSync('git',['ls-files','--stage','scripts/bootstrap-agent-control.sh'],{cwd:repositoryRoot,encoding:'utf8'}),/^100755 /);else assert.notEqual(fs.statSync(bootstrap).mode & 0o111, 0);
   const source = fs.readFileSync(bootstrap, 'utf8');
   assert.doesNotMatch(source, /run build/);
   assert.match(source, /ci --ignore-scripts --no-audit --no-fund/);
@@ -48,14 +48,14 @@ for (const locked of [false,true]) test(`published Linux bootstrap initializes a
       "const target = '.agent-control/config.json';",
       "if (!fs.existsSync(target)) fs.writeFileSync(target, '{}\\n');",
     ].join('\n'));
-    if(locked)execFileSync('npm',['install','--package-lock-only','--ignore-scripts','--no-audit','--no-fund'],{cwd:root});
+    if(locked)execFileSync(process.execPath,[process.env.npm_execpath??path.join(path.dirname(process.execPath),'node_modules/npm/bin/npm-cli.js'),'install','--package-lock-only','--ignore-scripts','--no-audit','--no-fund'],{cwd:root});
     execFileSync('git', ['-C', root, 'init']);
     execFileSync('git', ['-C', root, 'config', 'user.email', 'fixture@example.invalid']);
     execFileSync('git', ['-C', root, 'config', 'user.name', 'Fixture']);
     execFileSync('git', ['-C', root, 'add', '.']);
     execFileSync('git', ['-C', root, 'commit', '-m', 'fixture']);
 
-    const checked = JSON.parse(execFileSync(path.join(root, 'scripts/bootstrap-agent-control.sh'), [
+    const checked = JSON.parse(execFileSync('bash', [path.join(root, 'scripts/bootstrap-agent-control.sh'),
       '--check',
       '--target',
       root,
@@ -66,7 +66,7 @@ for (const locked of [false,true]) test(`published Linux bootstrap initializes a
     assert.equal(checked.dashboard, 'available');
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const output = execFileSync(path.join(root, 'scripts/bootstrap-agent-control.sh'), [
+      const output = execFileSync('bash', [path.join(root, 'scripts/bootstrap-agent-control.sh'),
         '--install',
         '--role',
         'control',
@@ -106,7 +106,7 @@ test('bootstrap fails closed before install when the dashboard product surface i
     execFileSync('git', ['-C', root, 'config', 'user.name', 'Fixture']);
     execFileSync('git', ['-C', root, 'add', '.']);
     execFileSync('git', ['-C', root, 'commit', '-m', 'fixture']);
-    assert.throws(() => execFileSync(path.join(root, 'scripts/bootstrap-agent-control.sh'), [
+    assert.throws(() => execFileSync('bash', [path.join(root, 'scripts/bootstrap-agent-control.sh'),
       '--install',
       '--target',
       root,

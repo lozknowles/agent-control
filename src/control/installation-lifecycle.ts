@@ -217,7 +217,7 @@ function probe(id: string, required: boolean, args: string[]) {
       required,
       available: true,
       version:
-        execFileSync(id, args, {
+        execFileSync(process.platform==='win32'&&id==='npm'?process.execPath:id, process.platform==='win32'&&id==='npm'?[process.env.npm_execpath??path.join(path.dirname(process.execPath),'node_modules/npm/bin/npm-cli.js'),...args]:args, {
           encoding: "utf8",
           stdio: ["ignore", "pipe", "ignore"],
           timeout: 1500,
