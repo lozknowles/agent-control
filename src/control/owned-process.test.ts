@@ -164,3 +164,15 @@ test('Windows inventory failure after termination remains uncertain', async () =
   const result=await adapter.terminate({pid:42,platform:'win32',startedAtToken:'fixture',capturedAt:'fixture'},{} as any,'fixture');
   assert.equal(result.outcome,'uncertain');assert.equal(calls,2);
 });
+
+test('successful empty Windows inventory positively proves absence',async()=>{
+ const {WindowsTerminationAdapter}=await import('./owned-process.js');
+ const adapter=process.platform==='win32'?new WindowsTerminationAdapter():new WindowsTerminationAdapter(async()=>[]);
+ const identity={pid:2147483647,platform:'win32' as const,startedAtToken:null,capturedAt:'fixture'};
+ const result=await adapter.terminate(identity,{} as any,'absence-verification');assert.equal(result.outcome,'confirmed');
+});
+test('Windows native identity capture emits structured process metadata',async()=>{
+ const {WindowsTerminationAdapter}=await import('./owned-process.js');
+ const adapter=process.platform==='win32'?new WindowsTerminationAdapter():new WindowsTerminationAdapter(async()=>[{pid:process.pid,parentPid:1,startedAtToken:'fixture'}]);
+ const identity=await adapter.capture(process.pid);assert.ok(identity.startedAtToken);assert.equal(identity.pid,process.pid);
+});

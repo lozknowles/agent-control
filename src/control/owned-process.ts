@@ -168,7 +168,7 @@ function runWindowsInventory(rootPid: number): Promise<WindowsProcessIdentity[] 
     '$wanted = [System.Collections.Generic.HashSet[int]]::new(); [void]$wanted.Add($root)',
     'do { $changed = $false; foreach ($row in $rows) { if ($wanted.Contains([int]$row.ParentProcessId) -and $wanted.Add([int]$row.ProcessId)) { $changed = $true } } } while ($changed)',
     '$result = @($rows | Where-Object { $wanted.Contains([int]$_.ProcessId) } | ForEach-Object { [ordered]@{ pid = [int]$_.ProcessId; parentPid = [int]$_.ParentProcessId; startedAtToken = [string]$_.CreationDate } })',
-    '[Console]::Out.Write(($result | ConvertTo-Json -Compress))',
+    '[Console]::Out.Write((ConvertTo-Json -InputObject $result -Compress))',
   ].join('\n');
   return new Promise(resolve => {
     const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', source], {env: {...process.env, AGENT_CONTROL_OWNED_PID: String(rootPid)}, windowsHide: true, stdio: ['pipe', 'pipe', 'ignore']});
