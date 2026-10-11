@@ -9,17 +9,19 @@ export interface ExternalSessionObservation {
   id:string; revision:number; usage:CanonicalExternalUsage;
   sourcePathHash:string; evidenceHash:string; line:number;
   counterBasis:'message'|'cumulative'; supersedes:string|null;
+  providerRequestId?:string|null; providerId?:string|null;
 }
 export interface ExternalSessionSnapshot {
   observations:ExternalSessionObservation[];
   gaps:Array<{line:number; reason:string}>;
   duplicates:number; sourcePathHash:string; contentHash:string;
+  parserState?:{session:string|null;model?:string};
 }
 /** Pure snapshot parser. Never retains conversation text, paths or provider invoices. */
-export function parseExternalSessionLog(source:Exclude<ExternalUsageSource,'other'>,content:string,pathIdentity:string):ExternalSessionSnapshot {
+export function parseExternalSessionLog(source:Exclude<ExternalUsageSource,'other'>,content:string,pathIdentity:string,initial?:{session:string|null;model?:string},lineOffset=0):ExternalSessionSnapshot {
   if(Buffer.byteLength(content)>64*1024*1024)throw Error('external_log_capacity');
   const sourcePathHash=hash(pathIdentity), observations:ExternalSessionObservation[]=[], gaps:ExternalSessionSnapshot['gaps']=[];
-  const seen=new Map<string,ExternalSessionObservation>(); let duplicates=0, session:string|null=null, model:string|undefined;
+  const seen=new Map<string,ExternalSessionObservation>(),revisionCounts=new Map<string,number>(); let duplicates=0, session=initial?.session??null, model=initial?.model;
   const lines=content.split('\n');
   for(let index=0;index<lines.length;index++){
     const raw=lines[index]!; if(!raw.trim())continue;
@@ -57,14 +59,16 @@ export function parseExternalSessionLog(source:Exclude<ExternalUsageSource,'othe
       if(previous&&JSON.stringify({...previous.usage,at:null})===JSON.stringify({...usage,at:null})){duplicates++;continue;}
       // A decrease indicates truncation/reset or conflicting evidence; do not replace
       // a valid high-water snapshot with a smaller observation.
-      if(previous&&(['input','cachedInput','cacheWrite','output','reasoningOutput'] as const).some(k=>previous.usage[k]!==null&&(usage[k]===null||usage[k]!<previous.usage[k]!))){
-        gaps.push({line:index+1,reason:'counter_regression'});continue;
-      }
-      const observation={id,revision:(previous?.revision??-1)+1,usage,sourcePathHash,evidenceHash,line:index+1,counterBasis:basis,supersedes:previous?.evidenceHash??null};
-      observations.push(observation);seen.set(id,observation);
+      const regressed=previous&&(['input','cachedInput','cacheWrite','output','reasoningOutput'] as const).some(k=>previous.usage[k]!==null&&(usage[k]===null||usage[k]!<previous.usage[k]!));
+      if(regressed)gaps.push({line:index+1,reason:'counter_regression'});
+      const request=r.providerRequestId??r.requestId??r.request_id??r.payload?.providerRequestId??r.message?.request_id;
+      const provider=r.providerId??r.provider_id??r.message?.provider_id;
+      const revision=revisionCounts.get(id)??0;
+      const observation={id,revision,usage,sourcePathHash,evidenceHash,line:index+1+lineOffset,counterBasis:basis,supersedes:previous?.evidenceHash??null,providerRequestId:typeof request==='string'&&request.length<=512?request:null,providerId:typeof provider==='string'&&/^[A-Za-z0-9._:-]{1,120}$/.test(provider)?provider:null};
+      observations.push(observation);revisionCounts.set(id,revision+1);if(!regressed)seen.set(id,observation);
     }catch{gaps.push({line:index+1,reason:'invalid_record_or_usage'});}
   }
-  return {observations,gaps,duplicates,sourcePathHash,contentHash:hash(content)};
+  return {observations,gaps:gaps.map(g=>({...g,line:g.line+lineOffset})),duplicates,sourcePathHash,contentHash:hash(content),parserState:{session,model}};
 }
 /** Explicit file list only. No discovery, polling, state writes, or home-directory scans. */
 export async function readExternalSessionLog(source:'codex'|'claude',file:string,maxBytes=16*1024*1024){
@@ -90,10 +94,24 @@ export function reconcileExternalSnapshots(snapshots:ExternalSessionSnapshot[]){
     if(previous&&Date.parse(observation.usage.at)>=Date.parse(previous.usage.at)&&(['input','cachedInput','cacheWrite','output','reasoningOutput'] as const).some(k=>previous.usage[k]!==null&&(observation.usage[k]===null||observation.usage[k]!<previous.usage[k]!))){reconciliationGaps.push({line:observation.line,reason:'snapshot_counter_regression'});continue;}
     if(!previous||Date.parse(observation.usage.at)>=Date.parse(previous.usage.at))latest.set(observation.id,observation);
   }
-  // Forks/copies and native overlap cannot safely be resolved by timestamp/model.
-  // Therefore expose observations only, without a combined native/external total.
-  return {schema:'agent-control.external-session-usage/v1',rows:[...latest.values()],revisions:[...revisions.values()],
+  const groups=new Map<string,ExternalSessionObservation[]>();
+  for(const row of latest.values()){
+    // Claude message IDs survive copied fork ancestry. Codex cumulative counters
+    // require the session ID because they do not expose a per-request identity.
+    const key=hash(JSON.stringify([row.usage.source,row.usage.source==='claude'?null:row.usage.sessionId,row.usage.eventId]));
+    const group=groups.get(key)??[];group.push(row);groups.set(key,group);
+  }
+  const rows:ExternalSessionObservation[]=[], conflicts:Array<{identityHash:string;state:'unresolved_cross_file_divergence';sourcePathHashes:string[];evidenceHashes:string[]}>=[];
+  for(const [identityHash,group] of groups){
+    const fingerprint=(row:ExternalSessionObservation)=>JSON.stringify({...row.usage,sessionId:row.usage.source==='claude'?null:row.usage.sessionId,at:null,providerRequestId:row.providerRequestId??null,providerId:row.providerId??null});
+    if(new Set(group.map(fingerprint)).size>1){
+      conflicts.push({identityHash,state:'unresolved_cross_file_divergence',sourcePathHashes:group.map(r=>r.sourcePathHash),evidenceHashes:group.map(r=>r.evidenceHash)});
+    }else{rows.push(group[0]!);duplicates+=group.length-1;}
+  }
+  return {schema:'agent-control.external-session-usage/v1',rows,revisions:[...revisions.values()],conflicts,
     duplicates:duplicates+snapshots.reduce((n,s)=>n+s.duplicates,0),gaps:[...reconciliationGaps,...snapshots.flatMap(s=>s.gaps.map(g=>({...g,sourcePathHash:s.sourcePathHash})))],
     authority:'EXTERNAL_SESSION_LOG',periodAllocation:'SESSION_LIFETIME_UNFILTERED',apiCost:null,nativeAccountingEffect:'NONE',
-    limitations:['Cross-file forks and native overlap are unresolved; rows must not be added to native totals.','Codex rows are session cumulative snapshots, not invocation or period usage.','Missing counters remain unknown; no prices, outcomes or task attribution inferred.']};
+    limitations:['Identical cross-file copies are counted once; divergent copies or forks are excluded pending resolution. Native overlap remains unresolved.','Codex rows are session cumulative snapshots, not invocation or period usage.','Missing counters remain unknown; no prices, outcomes or task attribution inferred.']};
 }
+
+export type ExternalSessionReport=ReturnType<typeof reconcileExternalSnapshots>;

@@ -14,6 +14,7 @@ import {JobCatalog} from './job-catalog.js';
 import {ActionRegistry, ArtifactStore, JobRuntime, ResourceLockManager, RunLedger, WorkerRegistry} from './job-runtime.js';
 import {COMMAND_RESULT_SCHEMA, MemoryCommandResultStore, TokenAwareOutputService, type OutputAuthorityScope} from './token-aware-output.js';
 import {MemoryHarnessEfficiencyLedger, createInvocationObservation} from './harness-efficiency.js';
+import {parseExternalSessionLog,reconcileExternalSnapshots} from './external-session-usage.js';
 import {WorkParcelCoordinator, WorkParcelStore, type WorkParcelPlanner} from './work-parcels.js';
 import {ProviderRegistry} from './providers.js';
 import {ModelRegistry} from './model-registry.js';
@@ -357,6 +358,17 @@ test('Social and Voice history and approval routes require authentication and sa
 });
 
 test('usage HTTP projection preserves token metric shape and serves real dashboard assets',async t=>{const control=service(),ledger=new MemoryHarnessEfficiencyLedger();const at=new Date().toISOString();ledger.record(createInvocationObservation({id:'http-usage',jobId:'job',taskId:'task',laneId:'lane',model:'model',provider:'provider',harnessProfile:'STANDARD',executionStrategy:'test',startedAt:at,completedAt:at,recipeFingerprint:'test',rawUsage:{input_tokens:10,output_tokens:2,total_tokens:12}}));control.configureProjection({harnessEfficiency:ledger});const operatorToken='isolated-usage-http-test';const server=startWebDashboard(control,{host:'127.0.0.1',port:0,operatorToken,assetsDir:path.resolve('assets/dashboard')});await once(server,'listening');const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;const headers={Authorization:`Bearer ${operatorToken}`};t.after(()=>server.close());const p=await(await fetch(base+'/api/usage?period=all',{headers})).json();assert.equal(p.totals.tokens.knownTotal,12);assert.equal((await fetch(base+'/dashboard-usage.js')).status,200);assert.equal((await fetch(base+'/dashboard-usage.css')).status,200);assert.equal((await fetch(base+'/api/usage?filter.secret=x',{headers})).status,400);});
+
+test('authenticated Usage & Cost reads committed external evidence without changing native totals',async t=>{
+ const control=service(),snapshot=parseExternalSessionLog('claude',JSON.stringify({type:'assistant',sessionId:'s',timestamp:'2026-10-11T12:00:00Z',message:{id:'m',model:'fixture',usage:{input_tokens:3,cache_read_input_tokens:0,cache_creation_input_tokens:0,output_tokens:1}}})+'\n','private-fixture');
+ control.setExternalUsageProjection(()=>reconcileExternalSnapshots([snapshot]));
+ const server=startWebDashboard(control,{host:'127.0.0.1',port:0,operatorToken:'external-usage-test',assetsDir:path.resolve('assets/dashboard')});await once(server,'listening');t.after(()=>server.close());
+ const base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+ assert.equal((await fetch(base+'/api/usage?period=all')).status,401);
+ const p=await(await fetch(base+'/api/usage?period=all',{headers:{Authorization:'Bearer external-usage-test'}})).json();
+ assert.equal(p.totals.calls,0);assert.equal(p.externalSessions.rows.length,1);assert.equal(p.externalSessions.nativeAccountingEffect,'NONE');
+ assert.ok(!JSON.stringify(p).includes('private-fixture'));
+});
 
 test('PWA serves a static offline shell and protects deployment observations',async()=>{
  const {server,base}=await running('pwa-test-operator');

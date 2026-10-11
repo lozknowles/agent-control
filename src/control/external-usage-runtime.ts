@@ -1,0 +1,35 @@
+import {readFile} from 'node:fs/promises';
+import {isAbsolute,join,resolve} from 'node:path';
+import {ExternalSessionStore,type AuthorizedExternalSessionFile,type ExternalSessionStoreReport} from './external-session-store.js';
+
+export interface ExternalUsageRuntime {
+  snapshot():ExternalSessionStoreReport & {freshness:'CURRENT'|'STALE_SOURCE_ERROR'};
+  refresh():Promise<void>;
+  close():void;
+}
+
+/** Opt-in manifest outside HTTP. A dashboard request only reads the committed projection. */
+export async function startExternalUsageRuntime(manifestPath:string,stateRoot:string,pollMs=30000):Promise<ExternalUsageRuntime>{
+  if(!isAbsolute(manifestPath))throw Error('external_manifest_absolute_path_required');
+  const manifest=JSON.parse(await readFile(resolve(manifestPath),'utf8')) as {schema?:unknown;files?:unknown};
+  if(manifest.schema!=='agent-control.external-usage-manifest/v1'||!Array.isArray(manifest.files)||manifest.files.length<1||manifest.files.length>32)throw Error('external_manifest_invalid');
+  const files:AuthorizedExternalSessionFile[]=manifest.files.map((value:unknown)=>{
+    if(!value||typeof value!=='object')throw Error('external_manifest_invalid');
+    const row=value as Record<string,unknown>;
+    if(!['codex','claude'].includes(String(row.source))||typeof row.file!=='string'||!isAbsolute(row.file)||Object.keys(row).some(k=>!['source','file'].includes(k)))throw Error('external_manifest_invalid');
+    return {source:row.source as 'codex'|'claude',file:row.file};
+  });
+  if(new Set(files.map(f=>f.source+'\0'+resolve(f.file))).size!==files.length)throw Error('external_manifest_duplicate_source');
+  const store=new ExternalSessionStore(join(stateRoot,'external-usage','evidence.json'));
+  let latest:ExternalSessionStoreReport & {freshness:'CURRENT'|'STALE_SOURCE_ERROR'}={...await store.snapshot(),freshness:'STALE_SOURCE_ERROR'};
+  let running=false;
+  const refresh=async()=>{
+    if(running)return;running=true;
+    try{latest={...await store.ingest(files),freshness:'CURRENT'};}
+    catch{latest={...await store.snapshot(),freshness:'STALE_SOURCE_ERROR'};}
+    finally{running=false;}
+  };
+  await refresh();
+  const timer=setInterval(()=>void refresh(),pollMs);timer.unref();
+  return {snapshot:()=>latest,refresh,close:()=>clearInterval(timer)};
+}

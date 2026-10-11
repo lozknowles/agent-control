@@ -6,6 +6,7 @@ import {RuntimeBenchmarkDiscoveryAdapter} from './control/runtime-benchmark-proj
 import {isAndroidUserspace,observeAndroid} from './control/android-environment.js';
 import {DefaultDiscoveryProbe} from './control/environment-discovery.js';
 import {usageQuestionQuery} from './control/usage-projection.js';
+import {startExternalUsageRuntime} from './control/external-usage-runtime.js';
 import {LocalWatchBenchmarkPort} from './control/local-watch-benchmark-port.js';
 import {IntelligenceJournal,ModelLandscape} from './control/model-landscape.js';
 import {ModelWatchRuntime,registerModelWatchJobs,modelWatchPlan} from './control/model-watch-runtime.js';
@@ -303,7 +304,9 @@ const voiceTransport:InstanceType<typeof VoiceTransportRuntime>=new VoiceTranspo
     updates:async(id,actor)=>{await service.poeOperator(id,actor);return service.poeConversation(id).turns.filter(t=>t.actor==='poe'&&['HANDOVER','RESULT'].includes(t.purpose??'')).map(t=>({id:t.id,text:t.text}));},
   },onChange:record=>service.events.emit('poe.conversation_changed',{conversationId:record.conversationId,voiceSessionId:record.id,state:record.state},undefined,'mallow'),
 });
+const externalUsageRuntime=process.env.AGENT_CONTROL_EXTERNAL_USAGE_MANIFEST?await startExternalUsageRuntime(process.env.AGENT_CONTROL_EXTERNAL_USAGE_MANIFEST,stateRoot):null;
+if(externalUsageRuntime)service.setExternalUsageProjection(()=>externalUsageRuntime.snapshot());
 const server = startWebDashboard(service, {estate,diagnostics,host, port, openwa, socialVoice, voiceTransport, operatorToken: process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN, allowedOrigins: process.env.AGENT_CONTROL_WEB_ALLOWED_ORIGINS?.split(',').map(value => value.trim()).filter(Boolean), configFile: configurationFile,costRoutingLedger,uxSessions,uxSessionShares,uxSessionAnnotations,sessionVault,securityAudits:jobRuntime.securityAudits,directInference,workBoards,containment,workspacePreferences,modelImprovement,automaticEvidence});
-server.on('close',()=>{void voiceTransport.dispose();if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
+server.on('close',()=>{externalUsageRuntime?.close();void voiceTransport.dispose();if(socialTimer)clearInterval(socialTimer);openwa?.close();uxSessionCapture.dispose();});
 server.on('listening', () => process.stdout.write(`Agent Control ${service.version} web dashboard: http://${host}:${port} (${process.env.AGENT_CONTROL_WEB_OPERATOR_TOKEN ? 'operator authenticated' : 'observer only'})\n`));
 server.on('error', error => { process.stderr.write(`Dashboard failed: ${error.message}\n`); process.exitCode = 1; });
