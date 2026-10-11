@@ -1,3 +1,4 @@
+import {pathToFileURL} from 'node:url';
 import {configPath, loadConfig} from './control/config.js';
 import {defaultProviderAdapterRegistry} from './control/provider-catalog.js';
 import {defaultProviderCredentialDirectory, providerSecureStoreReference, SecureProviderCredentialStore} from './control/provider-credential-store.js';
@@ -76,4 +77,4 @@ async function readCredential() {
   } finally { process.stdin.setRawMode(false); process.stdin.pause(); }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exitCode = await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = await main();

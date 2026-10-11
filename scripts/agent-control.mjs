@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {createRequire} from 'node:module';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {formatAuthoritativeStatus, readAuthoritativeStatus, statusExitCode, StatusClientError} from './status-client.mjs';
 import {doctorCommand} from './doctor.mjs';
 
@@ -130,7 +130,7 @@ async function runTypeScriptCommand(filename, args = []) {
   const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src', filename);
   const tsx = createRequire(import.meta.url).resolve('tsx');
   return await new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ['--import', tsx, script, ...args], {stdio: 'inherit', env: process.env});
+    const child = spawn(process.execPath, ['--import', pathToFileURL(tsx).href, script, ...args], {stdio: 'inherit', env: process.env});
     child.once('error', reject); child.once('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0)));
   });
 }

@@ -1,3 +1,4 @@
+import {pathToFileURL} from 'node:url';
 import {bootstrapAcpRuntime} from './control/acp-bootstrap.js';
 import {acpRemoteConfig, startAcpRemoteServer} from './control/acp-remote.js';
 
@@ -13,6 +14,6 @@ export async function runAcpRemote(environment: NodeJS.ProcessEnv = process.env)
   }).finally(async () => { await server.close(); stopScheduler(); });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   runAcpRemote().catch(error => { process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`); process.exitCode = 1; });
 }

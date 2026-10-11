@@ -11,8 +11,10 @@ test('package-bin symlink executes the Agent Control command entrypoint', () => 
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-bin-'));
   const source = fileURLToPath(new URL('./agent-control.mjs', import.meta.url));
   const command = path.join(root, 'agent-control');
-  fs.symlinkSync(source, command);
-  const result = spawnSync(command, ['--help'], {encoding: 'utf8'});
+  if(process.platform==='win32'){
+    fs.writeFileSync(command+'.cmd','@"'+process.execPath+'" "'+source+'" %*\r\n');
+  }else fs.symlinkSync(source, command);
+  const result = spawnSync(process.platform==='win32'?process.env.ComSpec??'cmd.exe':command, (process.platform==='win32'?['/d','/s','/c','"'+command+'.cmd" --help']:['--help']), {encoding: 'utf8', windowsVerbatimArguments: process.platform==='win32'});
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /agent-control status \[--json\]/);
 });
@@ -21,8 +23,10 @@ test('package-bin reports the installed Agent Control version', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-version-bin-'));
   const source = fileURLToPath(new URL('./agent-control.mjs', import.meta.url));
   const command = path.join(root, 'agent-control');
-  fs.symlinkSync(source, command);
-  const result = spawnSync(command, ['--version'], {encoding: 'utf8'});
+  if(process.platform==='win32'){
+    fs.writeFileSync(command+'.cmd','@"'+process.execPath+'" "'+source+'" %*\r\n');
+  }else fs.symlinkSync(source, command);
+  const result = spawnSync(process.platform==='win32'?process.env.ComSpec??'cmd.exe':command, (process.platform==='win32'?['/d','/s','/c','"'+command+'.cmd" --version']:['--version']), {encoding: 'utf8', windowsVerbatimArguments: process.platform==='win32'});
   assert.equal(result.status, 0, result.stderr);
   const packageVersion = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8')).version;
   assert.equal(result.stdout.trim(), `agent-control ${packageVersion}`);

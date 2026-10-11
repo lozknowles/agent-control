@@ -1,3 +1,4 @@
+import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
@@ -15,7 +16,7 @@ test('published test command isolates default Agent Control state', () => {
   delete environment.AGENT_CONTROL_TELEMETRY_DIR;
   const child = spawnSync(process.execPath, [
     '--import',
-    path.join(repositoryRoot, 'scripts/test-environment.mjs'),
+    pathToFileURL(path.join(repositoryRoot, 'scripts/test-environment.mjs')).href,
     '--eval',
     "import fs from 'node:fs'; fs.mkdirSync(process.env.AGENT_CONTROL_STATE_DIR, {recursive: true}); fs.mkdirSync(process.env.AGENT_CONTROL_TELEMETRY_DIR, {recursive: true}); fs.writeFileSync(process.env.AGENT_CONTROL_STATE_DIR + '/proof', 'isolated'); fs.writeFileSync(process.env.AGENT_CONTROL_TELEMETRY_DIR + '/proof', 'isolated'); process.stdout.write(JSON.stringify({state: process.env.AGENT_CONTROL_STATE_DIR, telemetry: process.env.AGENT_CONTROL_TELEMETRY_DIR}));",
   ], {cwd: repositoryRoot, env: environment, encoding: 'utf8'});
@@ -31,7 +32,7 @@ test('explicit test state remains operator-selected and is not removed', () => {
   try {
     const child = spawnSync(process.execPath, [
       '--import',
-      path.join(repositoryRoot, 'scripts/test-environment.mjs'),
+      pathToFileURL(path.join(repositoryRoot, 'scripts/test-environment.mjs')).href,
       '--eval',
       "import fs from 'node:fs'; fs.writeFileSync(process.env.AGENT_CONTROL_STATE_DIR + '/proof', 'explicit');",
     ], {cwd: repositoryRoot, env: {...process.env, AGENT_CONTROL_STATE_DIR: root}, encoding: 'utf8'});
