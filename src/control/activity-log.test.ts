@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {assertOwnerOnly} from './private-files.js';
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -16,7 +17,7 @@ test('activity projection has stable identity explicit unavailable values and re
 });
 test('one-event-per-line append supports tailing rotation and private fallback',t=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'activity-log-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));const preferred=path.join(root,'blocked');fs.writeFileSync(preferred,'not-a-directory');const fallback=path.join(root,'private','activity.jsonl'),log=new ActivityLogProjection(path.join(preferred,'activity.jsonl'),fallback);
-  log.append(source());log.append({...source(),type:'run.updated'});assert.equal(fs.readFileSync(fallback,'utf8').trim().split('\n').length,2);fs.renameSync(fallback,`${fallback}.1`);log.append({...source(),type:'run.finished'});assert.equal(fs.readFileSync(fallback,'utf8').trim().split('\n').length,1);assert.equal(fs.statSync(fallback).mode&0o777,0o640);
+  log.append(source());log.append({...source(),type:'run.updated'});assert.equal(fs.readFileSync(fallback,'utf8').trim().split('\n').length,2);fs.renameSync(fallback,`${fallback}.1`);log.append({...source(),type:'run.finished'});assert.equal(fs.readFileSync(fallback,'utf8').trim().split('\n').length,1);if(process.platform==='win32')assertOwnerOnly(fallback);else assert.equal(fs.statSync(fallback).mode&0o777,0o640);
 });
 test('Linux defaults to conventional var log while Android uses application-private state',()=>{
   assert.equal(activityLogPaths('/private',{},'linux').preferred,'/var/log/agent-control/activity.jsonl');assert.equal(activityLogPaths('/private',{ANDROID_ROOT:'/system'},'linux').preferred,path.join('/private','logs','activity.jsonl'));assert.equal(activityLogPaths('/private',{AGENT_CONTROL_ACTIVITY_LOG:'/custom/events.jsonl'},'linux').preferred,'/custom/events.jsonl');

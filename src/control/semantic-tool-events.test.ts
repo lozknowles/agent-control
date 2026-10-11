@@ -1,3 +1,4 @@
+import {assertOwnerOnly} from './private-files.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -15,7 +16,7 @@ test('semantic ledger retains only bounded identifiers and classifications', () 
     const record = JSON.parse(fs.readFileSync(file, 'utf8'));
     assert.equal(record.type, 'TOOL_PARSE_FAILED');
     assert.equal(record.responseSha256, 'a'.repeat(64));
-    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assertOwnerOnly(file);
   } finally {fs.rmSync(directory,{recursive:true,force:true});}
 });
 
@@ -30,6 +31,6 @@ test('forensic response needs explicit fixture grant, redacts credentials and re
     assert.equal(record.sanitizationChanged,true);
     assert.doesNotMatch(JSON.stringify(record),/sk-testSecret/);
     assert.match(record.rawSha256,/^[a-f0-9]{64}$/);
-    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    assertOwnerOnly(file);
   } finally {fs.rmSync(directory,{recursive:true,force:true});}
 });

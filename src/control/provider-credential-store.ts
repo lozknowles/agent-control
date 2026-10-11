@@ -1,3 +1,4 @@
+import {assertOwnerOnly,restrictOwnerOnly} from './private-files.js';
 import {createHash, randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,6 +21,7 @@ export class SecureProviderCredentialStore {
     const temporary = path.join(this.directory, `.${path.basename(target)}.${process.pid}.${randomUUID()}.tmp`);
     try {
       fs.writeFileSync(temporary, credential, {encoding: 'utf8', mode: 0o600, flag: 'wx'});
+      restrictOwnerOnly(temporary, 0o600);
       fs.renameSync(temporary, target);
       try { assertOwnerOnlyFile(target); }
       catch (error) { try { fs.unlinkSync(target); } catch {} throw error; }
@@ -63,13 +65,14 @@ export class SecureProviderCredentialStore {
     fs.mkdirSync(this.directory, {recursive: true, mode: 0o700});
     const stat = fs.lstatSync(this.directory);
     if (!stat.isDirectory() || stat.isSymbolicLink() || !ownedByCurrentUser(stat)) throw new Error('provider_credential_store_permissions_invalid');
-    fs.chmodSync(this.directory, 0o700);
+    restrictOwnerOnly(this.directory, 0o700);
     this.assertDirectory();
   }
 
   private assertDirectory() {
     const stat = fs.lstatSync(this.directory);
-    if (!stat.isDirectory() || stat.isSymbolicLink() || !ownedByCurrentUser(stat) || (stat.mode & 0o077) !== 0) throw new Error('provider_credential_store_permissions_invalid');
+    if (!stat.isDirectory() || stat.isSymbolicLink() || !ownedByCurrentUser(stat)) throw new Error('provider_credential_store_permissions_invalid');
+    try{assertOwnerOnly(this.directory);}catch{throw new Error('provider_credential_store_permissions_invalid');}
   }
 
   private file(reference: string) {
@@ -192,7 +195,8 @@ function rejectUnsafeTarget(file: string) {
 
 function assertOwnerOnlyFile(file: string) {
   const stat = fs.lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink() || !ownedByCurrentUser(stat) || (stat.mode & 0o077) !== 0) throw new Error('provider_credential_store_permissions_invalid');
+  if (!stat.isFile() || stat.isSymbolicLink() || !ownedByCurrentUser(stat)) throw new Error('provider_credential_store_permissions_invalid');
+  try{assertOwnerOnly(file);}catch{throw new Error('provider_credential_store_permissions_invalid');}
   return stat;
 }
 

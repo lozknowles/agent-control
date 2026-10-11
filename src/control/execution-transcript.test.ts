@@ -1,3 +1,4 @@
+import {assertOwnerOnly} from './private-files.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -41,7 +42,7 @@ test('complete transcript is generated during execution, uncapped, redacted and 
     assert.match(before.content, /Safe result 169/);
     assert.doesNotMatch(before.content, /nvapi-synthetic-secret-must-redact/);
     assert.match(before.content, /REDACTED/);
-    assert.equal(fs.statSync(path.join(transcriptRoot, before.file)).mode & 0o777, 0o600);
+    assertOwnerOnly(path.join(transcriptRoot, before.file));
     firstRuntime.dispose();
 
     const restartedRuns = new ParameterizedRunStore(path.join(root, 'runs.json')), restartedParcels = new WorkParcelStore(path.join(root, 'parcels.json')), restartedRouting = new TokenAwareBatonRuntime(path.join(root, 'routing.json'));

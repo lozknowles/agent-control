@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {assertOwnerOnly} from './control/private-files.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -43,8 +44,8 @@ test('public credential command uses the generic secure-store path without argv,
   assert.doesNotMatch(status.stdout, /fingerprint/);
 
   const storeDirectory = path.join(root, 'credentials', 'providers'), [storedFile] = fs.readdirSync(storeDirectory);
-  assert.equal(fs.statSync(storeDirectory).mode & 0o777, 0o700);
-  assert.equal(fs.statSync(path.join(storeDirectory, storedFile)).mode & 0o777, 0o600);
+  assertOwnerOnly(storeDirectory);
+  assertOwnerOnly(path.join(storeDirectory, storedFile));
   assert.equal(fs.readFileSync(path.join(storeDirectory, storedFile), 'utf8'), credential);
 
   const revoked = invoke('revoke');

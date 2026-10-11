@@ -1,3 +1,5 @@
+import {execFileSync} from 'node:child_process';
+import {assertOwnerOnly} from './private-files.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -23,9 +25,9 @@ test('existing provider-secure-store reference gets owner-only atomic storage, r
   const first = synthetic('ABCD'), second = synthetic('EFGH');
   assert.deepEqual(store.set(reference, first), {status: 'CONFIGURED', fingerprint: 'nvapi-…ABCD'});
   assert.equal(store.get(reference), first);
-  assert.equal(fs.statSync(directory).mode & 0o777, 0o700);
+  assertOwnerOnly(directory);
   const files = fs.readdirSync(directory); assert.equal(files.length, 1); assert.doesNotMatch(files[0], /nvidia|hosted|provider/);
-  assert.equal(fs.statSync(path.join(directory, files[0])).mode & 0o777, 0o600);
+  assertOwnerOnly(path.join(directory, files[0]));
   assert.deepEqual(store.set(reference, second), {status: 'CONFIGURED', fingerprint: 'nvapi-…EFGH'});
   assert.equal(store.get(reference), second);
   assert.deepEqual(store.revoke(reference), {status: 'MISSING'});
@@ -37,10 +39,10 @@ test('secure store rejects permissive files and symbolic-link targets', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-control-provider-credential-perms-')), directory = path.join(root, 'store'), store = new SecureProviderCredentialStore(directory), reference = 'provider:fixture';
   t.after(() => fs.rmSync(root, {recursive: true, force: true}));
   store.set(reference, synthetic());
-  const [file] = fs.readdirSync(directory); fs.chmodSync(path.join(directory, file), 0o644);
+  const [file] = fs.readdirSync(directory); if(process.platform==='win32')execFileSync('icacls',[path.join(directory,file),'/grant','*S-1-1-0:R']);else fs.chmodSync(path.join(directory, file), 0o644);
   assert.equal(store.status(reference), 'INVALID_STORE');
   assert.throws(() => store.get(reference), /permissions_invalid/);
-  fs.unlinkSync(path.join(directory, file)); fs.symlinkSync(path.join(root, 'elsewhere'), path.join(directory, file));
+  fs.unlinkSync(path.join(directory, file)); fs.mkdirSync(path.join(root,'elsewhere')); fs.symlinkSync(path.join(root, 'elsewhere'), path.join(directory, file),process.platform==='win32'?'junction':'dir');
   assert.throws(() => store.set(reference, synthetic('WXYZ')), /permissions_invalid/);
 });
 

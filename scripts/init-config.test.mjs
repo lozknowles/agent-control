@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {assertOwnerOnly} from '../src/control/private-files.ts';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -35,7 +36,7 @@ test('initializer preserves exclusive creation when the filesystem denies hard l
   assert.equal(initialized.result, 'CREATED');
   assert.equal(initialized.created, true);
   assert.deepEqual(loadConfig({environment, cwd: root}).config, emptyConfig());
-  assert.equal(fs.statSync(initialized.file).mode & 0o777, 0o600);
+  if(process.platform==='win32')assertOwnerOnly(initialized.file);else assert.equal(fs.statSync(initialized.file).mode & 0o777, 0o600);
   assert.deepEqual(fs.readdirSync(root), ['config.json']);
 });
 

@@ -1,3 +1,4 @@
+import {assertOwnerOnly} from './private-files.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,7 +7,7 @@ import test from 'node:test';
 import {materializeCodexModelConfig} from './codex-model-config.js';
 import {SecureProviderCredentialStore} from './provider-credential-store.js';
 
-test('materializes an ephemeral provider config without copying secret values or user config', () => { const secret = 'secret-value-must-not-appear'; const config = materializeCodexModelConfig({id:'openrouter',name:'OpenRouter',kind:'openai-compatible',baseUrl:'https://openrouter.ai/api/v1',wireApi:'responses',auth:{type:'bearer-env',env:'OPENROUTER_API_KEY'}},{id:'glm',provider:'openrouter',providerModel:'z-ai/glm',capabilities:['coding']},{OPENROUTER_API_KEY:secret}); try { const text=fs.readFileSync(config.configFile,'utf8'); assert.match(text,/model_provider = "agent_control_openrouter"/); assert.match(text,/env_key = "OPENROUTER_API_KEY"/); assert.equal(text.includes(secret),false); assert.equal(config.environment.CODEX_HOME,config.codexHome); assert.equal(fs.statSync(config.configFile).mode & 0o777,0o600); } finally { config.cleanup(); } });
+test('materializes an ephemeral provider config without copying secret values or user config', () => { const secret = 'secret-value-must-not-appear'; const config = materializeCodexModelConfig({id:'openrouter',name:'OpenRouter',kind:'openai-compatible',baseUrl:'https://openrouter.ai/api/v1',wireApi:'responses',auth:{type:'bearer-env',env:'OPENROUTER_API_KEY'}},{id:'glm',provider:'openrouter',providerModel:'z-ai/glm',capabilities:['coding']},{OPENROUTER_API_KEY:secret}); try { const text=fs.readFileSync(config.configFile,'utf8'); assert.match(text,/model_provider = "agent_control_openrouter"/); assert.match(text,/env_key = "OPENROUTER_API_KEY"/); assert.equal(text.includes(secret),false); assert.equal(config.environment.CODEX_HOME,config.codexHome); assertOwnerOnly(config.configFile); } finally { config.cleanup(); } });
 test('missing provider secret fails closed', () => { assert.throws(()=>materializeCodexModelConfig({id:'p',kind:'openai-compatible',baseUrl:'https://example.test/v1',auth:{type:'bearer-env',env:'MISSING_KEY'}},{id:'m',provider:'p',providerModel:'m',capabilities:[]},{}),/provider_authentication_required/); });
 test('Codex materialization rejects chat-completions-only providers', () => { assert.throws(()=>materializeCodexModelConfig({id:'p',kind:'openai-compatible',baseUrl:'https://example.test/v1',wireApi:'chat-completions',auth:{type:'none'}},{id:'m',provider:'p',providerModel:'m',capabilities:[]},{}),/codex_provider_wire_api_unsupported/); });
 
