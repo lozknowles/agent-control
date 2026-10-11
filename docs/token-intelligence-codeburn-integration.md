@@ -33,8 +33,8 @@ Source projects reviewed:
 - Runtime: incremental polling benchmark with large immutable history and one appended session, proving no stale snapshots.
 - Governance: full suite/typecheck/browser testing and explicit human release approval before merge, deployment or publication.
 
-## Initial executable slice
-`src/control/external-token-normalization.ts` provides a pure, non-I/O normalization boundary and focused tests. It is **not wired to ingestion or the dashboard**. No functionality should be described as live until connector, persistence, reconciliation and UX gates pass.
+## Initial executable slice (superseded by ingestion candidate)
+`src/control/external-token-normalization.ts` provides a pure, non-I/O normalization boundary and focused tests. The follow-up library reader, reconciliation and optional projection adapter are documented in [the ingestion candidate](token-intelligence-ingestion-candidate.md). Runtime/dashboard reads remain disabled. No functionality should be described as live until connector, persistence, reconciliation and UX gates pass.
 
 ## Follow-up work order
 1. Audit existing canonical usage row types and aggregation paths; define an adapter compatible with their coverage semantics.

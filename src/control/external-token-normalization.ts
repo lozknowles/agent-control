@@ -58,7 +58,7 @@ export function normalizeExternalUsage(event: ExternalUsageEvent): CanonicalExte
     ? (cached === null ? null : input - cached) : input;
   const inclusiveInput = input === null ? null :
     event.cacheReadIsIncludedInInput ? input : cached === null ? null : input + cached;
-  const total = inclusiveInput === null || output === null ? null : inclusiveInput + output +
+  const total = inclusiveInput === null || output === null || (!event.cacheReadIsIncludedInInput && write === null) ? null : inclusiveInput + output +
     (write ?? 0);
   if (total !== null && !Number.isSafeInteger(total)) throw new Error("Token total exceeds safe range");
   return {
