@@ -42,3 +42,12 @@ test('explicit request and provider with attested matching counters confirms evi
   const conflict=projectExternalUsage(report,date('2026-10-11T00:00:00Z'),date('2026-10-12T00:00:00Z'),[{...native,accounting:{...native.accounting,evidence:{...native.accounting.evidence,output:4}}}]);
   assert.equal(conflict.rows[0]?.nativeOverlap,'CONFLICTING_REQUEST_ID');
 });
+
+test('external dashboard response respects native query row limit and reports coverage',()=>{
+  const a={type:'assistant',sessionId:'s',timestamp:'2026-10-11T12:00:00Z',message:{id:'a',usage:{input_tokens:1,cache_read_input_tokens:0,cache_creation_input_tokens:0,output_tokens:1}}};
+  const b={...a,message:{...a.message,id:'b'}};
+  const view=usageProjection(undefined,[],{period:'all',limit:1},new Date('2026-10-11T13:00:00Z'),[parseExternalSessionLog('claude',log(a,b),'fixture')]);
+  assert.equal(view.externalSessions?.coverage.rows,2);
+  assert.equal(view.externalSessions?.coverage.returned,1);
+  assert.equal(view.externalSessions?.rows.length,1);
+});

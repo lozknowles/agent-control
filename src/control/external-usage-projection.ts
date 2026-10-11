@@ -10,7 +10,7 @@ const observation=(r:ExternalSessionObservation)=>({id:r.id,source:r.usage.sourc
   providerRequestId:r.providerRequestId??null,providerId:r.providerId??null});
 
 /** External evidence stays outside native totals, prices, resets and job outcomes. */
-export function projectExternalUsage(report:ExternalReport,start:number,end:number,native:ModelInvocationObservation[],filters:Record<string,string>={}){
+export function projectExternalUsage(report:ExternalReport,start:number,end:number,native:ModelInvocationObservation[],filters:Record<string,string>={},limit=200){
   const nativeRequests=new Map<string,ModelInvocationObservation[]>();
   for(const row of native){const request=row.accounting?.providerRequestId;if(!request)continue;nativeRequests.set(request,[...(nativeRequests.get(request)??[]),row]);}
   const conflictIds=new Set((report.conflicts??[]).flatMap((c:any)=>typeof c?.id==='string'?[c.id]:[]));
@@ -53,8 +53,10 @@ export function projectExternalUsage(report:ExternalReport,start:number,end:numb
   }
   const unsupportedFilters=Object.keys(filters).filter(k=>k!=='model');
   const selected=unsupportedFilters.length?[]:rows.filter(r=>!filters.model||r.model===filters.model);
+  selected.sort((a,b)=>b.at.localeCompare(a.at));
+  const returned=selected.slice(0,limit);
   return {schema:'agent-control.external-usage-projection/v1',authority:'EXTERNAL_SESSION_LOG',nativeAccountingEffect:'NONE',apiCost:null,
-    period:{start:new Date(start).toISOString(),end:new Date(end).toISOString(),timezone:'UTC'},rows:selected,filterStatus:unsupportedFilters.length?'UNSUPPORTED_FILTERS':'APPLIED',unsupportedFilters,coverage:{rows:selected.length,duplicates:report.duplicates,conflicts:(report.conflicts??[]).length,excludedConflictedRows:conflicted,gaps:report.gaps.length,unallocatedIntervals,possibleNativeOverlap,confirmedNativeOverlap:selected.filter(r=>r.nativeOverlap==='CONFIRMED_EVIDENCE_OVERLAP').length,combinedNativeExternalTotalAvailable:false},
-    freshness:report.freshness??'STORED_OBSERVATIONS',cursors:report.cursors??[],conflicts:report.conflicts??[],gaps:report.gaps,
+    period:{start:new Date(start).toISOString(),end:new Date(end).toISOString(),timezone:'UTC'},rows:returned,filterStatus:unsupportedFilters.length?'UNSUPPORTED_FILTERS':'APPLIED',unsupportedFilters,coverage:{rows:selected.length,returned:returned.length,duplicates:report.duplicates,conflicts:(report.conflicts??[]).length,excludedConflictedRows:conflicted,gaps:report.gaps.length,unallocatedIntervals,possibleNativeOverlap,confirmedNativeOverlap:selected.filter(r=>r.nativeOverlap==='CONFIRMED_EVIDENCE_OVERLAP').length,combinedNativeExternalTotalAvailable:false},
+    freshness:report.freshness??'STORED_OBSERVATIONS',cursors:(report.cursors??[]).slice(0,32),conflicts:(report.conflicts??[]).slice(0,100),gaps:report.gaps.slice(0,100),
     limitations:['External usage is never added to native totals or billed as an API charge.','The first Codex cumulative snapshot has no observed start; intervals crossing the selected period remain unallocated.','Confirmed evidence overlap does not prove identical billing; request-ID candidates need provider identity and counter semantics.','External evidence is retained independently of native usage visibility resets.']};
 }

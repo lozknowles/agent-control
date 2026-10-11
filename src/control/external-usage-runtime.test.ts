@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,appendFile,rm} from 'node:fs/promises';
+import {mkdtemp,writeFile,appendFile,rm,symlink,unlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {startExternalUsageRuntime} from './external-usage-runtime.js';
@@ -26,4 +26,19 @@ test('manifest rejects relative source paths before any source read',async()=>{
   try{await writeFile(manifest,JSON.stringify({schema:'agent-control.external-usage-manifest/v1',files:[{source:'codex',file:'relative.jsonl'}]}));
     await assert.rejects(startExternalUsageRuntime(manifest,dir),/external_manifest_invalid/);
   }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('manifest pins the initially authorized canonical symlink target',async t=>{
+  const dir=await mkdtemp(join(tmpdir(),'external-usage-link-'));
+  const first=join(dir,'first.jsonl'),second=join(dir,'second.jsonl'),link=join(dir,'chosen.jsonl'),manifest=join(dir,'manifest.json');
+  let runtime:Awaited<ReturnType<typeof startExternalUsageRuntime>>|undefined;
+  const row=(id:string)=>JSON.stringify({type:'assistant',sessionId:'s',timestamp:'2026-10-11T12:00:00Z',message:{id,usage:{input_tokens:1,cache_read_input_tokens:0,cache_creation_input_tokens:0,output_tokens:1}}})+'\n';
+  try{
+    await writeFile(first,row('approved'));await writeFile(second,row('unapproved'));
+    try{await symlink(first,link,'file');}catch(error){if((error as NodeJS.ErrnoException).code==='EPERM'){t.skip('symlink creation unavailable');return;}throw error;}
+    await writeFile(manifest,JSON.stringify({schema:'agent-control.external-usage-manifest/v1',files:[{source:'claude',file:link}]}));
+    runtime=await startExternalUsageRuntime(manifest,dir,3600000);
+    await unlink(link);await symlink(second,link,'file');await runtime.refresh();
+    assert.deepEqual(runtime.snapshot().rows.map(r=>r.usage.eventId),['approved']);
+  }finally{runtime?.close();await rm(dir,{recursive:true,force:true});}
 });

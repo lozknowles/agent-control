@@ -11,6 +11,7 @@ The web process enables external usage only when `AGENT_CONTROL_EXTERNAL_USAGE_M
 ```
 
 Windows paths must use valid JSON escaping. External evidence is stored under the configured Agent Control state directory at `external-usage/evidence.json`. Keep that directory private. The process checks for new complete records every 30 seconds. Refresh failures leave previously committed evidence visible with stale-source status; corrupt storage fails closed. A stale writer lock requires operator inspection before manual recovery.
+Source paths are resolved once at startup to their canonical targets. A later symlink change does not switch the configured source. File replacement and truncation are recorded as source generations and coverage gaps.
 
 The inspection CLI can also persist explicit files with `--store`; this does not enable the dashboard by itself.
 
@@ -22,6 +23,7 @@ The inspection CLI can also persist explicit files with `--store`; this does not
 - External sessions appear in their own Usage & Cost tab. Native totals, API charges, energy, retries, outcomes and visibility-reset behaviour are unchanged. No combined native/external total is offered.
 - Native request-ID matches are possible overlaps. An explicit matching provider identity and attested message counter semantics can confirm an evidence overlap, while a mismatched counter record is a conflict. Evidence overlap does not prove identical billing; no external observation is subtracted from native accounting.
 - External model filters apply exactly. Other native dimensions are reported as unsupported for the external view and return no external rows.
+- External rows respect the Usage & Cost query limit (maximum 1,000); coverage reports matching and returned counts. Conflict and gap samples are bounded in the dashboard response while their full counts remain visible.
 
 ## Architecture gate
 
