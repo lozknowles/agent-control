@@ -30,6 +30,9 @@ export class OpenWAAdapter {
   private enabled = true;
   private busy = false;
   private stopped = false;
+  private databaseClosed = false;
+  private readonly shutdownController = new AbortController();
+  private idleWaiters: Array<() => void> = [];
   private health = {state: 'unchecked', phone: null as string | null, checkedAt: 0};
   private timer?: ReturnType<typeof setInterval>;
   private unsubscribe?: () => void;
@@ -64,11 +67,23 @@ export class OpenWAAdapter {
     this.db.exec("UPDATE outbox SET state='uncertain',code='restart_during_send' WHERE state='sending'");
   }
   start() {
+    if (this.stopped || this.timer) return;
     this.unsubscribe = this.service.events.subscribe(event => { if (event.type.startsWith('job.') || event.type.startsWith('token.')) { try { this.reconcile(); } catch { /* isolated adapter; next tick retries */ } } });
     this.timer = setInterval(() => void this.tick().catch(() => {}), 1000); this.timer.unref();
     void this.tick().catch(() => {});
   }
-  close() { this.stopped = true; if (this.timer) clearInterval(this.timer); this.unsubscribe?.(); if (!this.busy) this.db.close(); }
+  private closeDatabase() { if (!this.databaseClosed) { this.db.close(); this.databaseClosed = true; } }
+  close() {
+    this.stopped = true;
+    if (this.timer) clearInterval(this.timer);
+    this.timer = undefined; this.unsubscribe?.(); this.unsubscribe = undefined;
+    this.shutdownController.abort(new Error('openwa_closed'));
+    if (!this.busy) this.closeDatabase();
+  }
+  async shutdown() {
+    this.close();
+    if (this.busy) await new Promise<void>(resolve => this.idleWaiters.push(resolve));
+  }
   status() {
     return {enabled: this.enabled, gatewayCommit: OPENWA_COMMIT, health: this.health, accountLabel: this.config.accountLabel,
       templates: this.config.templates.map(({name, jobId, arguments: args, maxActive, maxRunsPerHour}) => ({name, jobId, arguments: args, maxActive, maxRunsPerHour})),
@@ -243,9 +258,21 @@ export class OpenWAAdapter {
     }
   }
   private async gateway(route: string, init: RequestInit = {}) {
-    const response = await this.request(`${this.config.gatewayUrl.replace(/\/$/,'')}/sessions/${encodeURIComponent(this.config.sessionId)}${route}`,{...init,headers:{'X-API-Key':this.apiKey,'Content-Type':'application/json'},redirect:'error',signal:AbortSignal.timeout(10000)});
-    if (!response.ok) throw new Error(`gateway_http_${response.status}`);
-    const result = await response.json(); return result.data ?? result;
+    const signal = AbortSignal.any([this.shutdownController.signal, AbortSignal.timeout(10000)]);
+    signal.throwIfAborted();
+    let onAbort: () => void = () => {};
+    const cancelled = new Promise<never>((_, reject) => {
+      onAbort = () => reject(signal.reason);
+      signal.addEventListener('abort', onAbort, {once: true});
+    });
+    try {
+      return await Promise.race([cancelled, (async () => {
+        const response = await this.request(this.config.gatewayUrl.replace(/\/$/,'')+'/sessions/'+encodeURIComponent(this.config.sessionId)+route,
+          {...init, headers:{'X-API-Key':this.apiKey,'Content-Type':'application/json'},redirect:'error',signal});
+        if (!response.ok) throw new Error('gateway_http_'+response.status);
+        const result = await response.json(); return result.data ?? result;
+      })()]);
+    } finally { signal.removeEventListener('abort', onAbort); }
   }
   async checkHealth() {
     try { const session = await this.gateway(''); const phone = typeof session.phone === 'string' ? `+${session.phone.replace(/\D/g,'')}` : null;
@@ -268,9 +295,16 @@ export class OpenWAAdapter {
   async socialAudio(identity:SocialIdentity,messageId:string) {
     if(!this.socialPrincipal(identity)||messageId.length>256)throw new Error('social_identity_denied');
     const url=`${this.config.gatewayUrl.replace(/\/$/,'')}/sessions/${this.config.sessionId}/messages/${encodeURIComponent(identity.conversation)}/${encodeURIComponent(messageId)}/media`;
-    const response=await this.request(url,{headers:{'X-API-Key':this.apiKey},signal:AbortSignal.timeout(15000),redirect:'error'});
+    const signal=AbortSignal.any([this.shutdownController.signal,AbortSignal.timeout(15000)]);
+    signal.throwIfAborted();
+    let onAbort:()=>void=()=>{};
+    const cancelled=new Promise<never>((_,reject)=>{onAbort=()=>reject(signal.reason);signal.addEventListener('abort',onAbort,{once:true});});
+    try{return await Promise.race([cancelled,(async()=>{
+    const response=await this.request(url,{headers:{'X-API-Key':this.apiKey},signal,redirect:'error'});
     if(!response.ok||Number(response.headers.get('content-length'))>8*1024*1024)throw new Error('social_audio_unavailable');
     const bytes=await readBoundedResponse(response,8*1024*1024),mime=response.headers.get('content-type')??'';validateAudio(bytes,mime);return {bytes,mime};
+    })()]);}finally{signal.removeEventListener('abort',onAbort);}
+
   }
   async reconnectSession() { if(!this.enabled)throw new Error('integration_disabled'); await this.gateway('/start',{method:'POST',body:'{}'}); return this.checkHealth(); }
   async tick() {
@@ -291,6 +325,6 @@ export class OpenWAAdapter {
         const safeRetry = error instanceof Error && error.message === 'gateway_http_429';
         this.db.prepare('UPDATE outbox SET state=?,due=?,code=? WHERE id=?').run(safeRetry ? row.attempts+1>=5?'failed':'retry':'uncertain',this.clock()+Math.min(300000,5000*2**row.attempts),safeRetry?'rate_limited':'send_result_uncertain',row.id);
       }
-    } finally { this.busy = false; if (this.stopped) this.db.close(); }
+    } finally { this.busy = false; if (this.stopped) this.closeDatabase(); for (const resolve of this.idleWaiters.splice(0)) resolve(); }
   }
 }
